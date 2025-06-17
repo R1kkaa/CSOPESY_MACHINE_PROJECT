@@ -25,7 +25,7 @@ public:
     void setstatus(Status status);
     std::string getname() const;
     void setname(std::string name);
-    void setinstructions(std::queue<std::shared_ptr<ICommand>> instructions);
+    void setinstructions(std::queue<std::shared_ptr<ICommand>> instructions, int size);
     void setcore(int core);
     [[nodiscard]] int getID() const;
     [[nodiscard]] std::string displayTimestamp() const;
@@ -36,6 +36,8 @@ public:
     bool has_cpu_cycled() const;
     void set_cpu_cycled(bool cpu_cycled);
     void runInstruction();
+    int getcurrLine() const;
+    int getmaxLine() const;
 
 private:
     std::string name;
@@ -47,6 +49,8 @@ private:
     Status status;
     std::shared_ptr<std::stringstream> printLogs;
     bool hasCPUCycled = false; //can be removed ig
+    int currLine = 0;
+    int maxLine = 0;
 
 };
 #endif //PROCESS_H

@@ -63,7 +63,15 @@ void Shell::start() {
             std::cout << userInput[0] << " command recognized." << std::endl;
         }
         else if (userInput[0] == "report-util") {
-            std::cout << userInput[0] << " command recognized." << std::endl;
+            std::cout << "-----------------------------------" << std::endl;
+            std::cout << "Running Processes:" << std::endl;
+            for (int i = 0; i < CPUs.size(); i++)
+            {
+                std::cout << CPUs.at(i).curr_process().getname() << "   " + CPUs.at(i).curr_process().displayTimestamp() + "    Core: " + std::to_string(i) + "     " + std::to_string(CPUs.at(i).curr_process().getcurrLine()) + "/" + std::to_string(CPUs.at(i).curr_process().getmaxLine()) << std::endl;
+            }
+            std::cout << "\nFinished Processes:" << std::endl;
+            std::cout << "INSERT FINISHED PROCESSES QUEUE HERE" << std::endl;
+            std::cout << "----------------------------------" << std::endl;
         }
         else if (userInput[0] == "screen" && (userInput[1] == "-r" || userInput[1] == "-s"))
         {
@@ -116,11 +124,13 @@ void Shell::openscreen(process* screen)
         }
         if (userInput[0] == "process-smi")
         {
+            std::cout << "Logs: \n\n";
             auto logs = screen->getFormattedLogs();
             for (auto i: logs)
             {
                 std::cout << i << std::endl;
             }
+            std::cout << "\n\n";
         }
     }
 }
@@ -133,7 +143,7 @@ process Shell::generatedummyprocess(std::string name)
     {
         commands.push(std::make_shared<PrintCommand>(newprocess.getID(), toPrint, newprocess.getPrintLogs()));
     }
-    newprocess.setinstructions(commands);
+    newprocess.setinstructions(commands, commands.size());
     return newprocess;
 }
 

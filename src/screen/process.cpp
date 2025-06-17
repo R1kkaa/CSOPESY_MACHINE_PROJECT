@@ -26,8 +26,10 @@ void process::setname(std::string name)
     this->name=std::move(name);
 }
 
-void process::setinstructions(std::queue<std::shared_ptr<ICommand>> instructions)
+void process::setinstructions(std::queue<std::shared_ptr<ICommand>> instructions, const int size)
 {
+    currLine += 1;
+    this->maxLine = size;
     this->instructions=std::move(instructions);
 }
 int process::getID() const
@@ -89,6 +91,7 @@ void process::set_cpu_cycled(bool cpu_cycled)
 
 void process::runInstruction()
 {
+    currLine+=1;
     if (!instructions.empty())
     {
         instructions.front()->execute();
@@ -104,5 +107,15 @@ void process::runInstruction()
     {
         status=FINISHED;
     }
+}
+
+int process::getcurrLine() const
+{
+    return this->currLine;
+}
+
+int process::getmaxLine() const
+{
+    return this->maxLine;
 }
 
