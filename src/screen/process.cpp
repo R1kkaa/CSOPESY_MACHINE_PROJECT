@@ -7,15 +7,17 @@
 #include <ctime>
 #include <string>
 #include <sstream>
+#include <utility>
 
 #include "PrintCommand.h"
 
 process::process(std::string name) : printLogs(std::make_shared<std::stringstream>())
 {
-    this->name = name;
+    this->name = std::move(name);
     id=++counter;
     creationTime = std::chrono::system_clock::now();
     this->status = STOPPED;
+
 }
 std::string process::getname() const
 {
@@ -50,10 +52,12 @@ std::string process::displayTimestamp() const {
 }
 
 std::string process::executionTime() const{
-    const std::time_t time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-    std::tm* timeInfo = std::localtime(&time); // Convert to local time
+    auto now = std::chrono::system_clock::now();
+    std::time_t time = std::chrono::system_clock::to_time_t(now);
+    std::tm local_tm  = *std::localtime(&time);
+
     std::ostringstream oss;
-    oss << std::put_time(timeInfo, "(%m/%d/%Y, %I:%M:%S %p)");
+    oss << std::put_time(&local_tm, "%m/%d/%Y, %I:%M:%S %p");
     return oss.str();
 }
 
@@ -91,18 +95,16 @@ void process::set_cpu_cycled(bool cpu_cycled)
 
 void process::runInstruction()
 {
-    currLine+=1;
     if (!instructions.empty())
-    {
-        instructions.front()->execute();
-
-        //timestamp
-        //std::string time = executionTime();
-        std::string time = "(TIMESTAMP) ";
-
-        formattedLogs.push_back(time + "Core: " + std::to_string(this->core) + " " + printLogs->str());
-        instructions.pop();
-    }
+        currLine+=1;
+        if (instructions.front()->getCommandType() == ICommand::PRINT)
+        {
+            currLine+=1;
+            instructions.front()->execute();
+            std::string append = time + "Core: " + std::to_string(this->core) + " " + printLogs->str();
+            instructions.pop();
+            formattedLogs.push_back(append);
+        }
     if (instructions.empty())
     {
         status=FINISHED;
@@ -118,4 +120,3 @@ int process::getmaxLine() const
 {
     return this->maxLine;
 }
-

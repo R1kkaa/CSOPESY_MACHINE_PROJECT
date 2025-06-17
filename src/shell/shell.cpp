@@ -26,12 +26,6 @@ void Shell::start() {
     //generate CPUs
     CPUs = generateCPUs(4, &Ticks, &Delay);
 
-    //start cpus
-    for (int i = 0; i < CPUs.size(); ++i)
-    {
-        CPUs.at(i).start();
-    }
-
     //start scheduler
     Scheduler scheduler(&Ticks, &Delay, &processes, false, &CPUs);
 

@@ -20,24 +20,24 @@ public:
         FINISHED
     };
     // Constructor
-    process(std::string name);
+    explicit process(std::string name);
     Status getstatus();
     void setstatus(Status status);
-    std::string getname() const;
+    [[nodiscard]] std::string getname() const;
     void setname(std::string name);
     void setinstructions(std::queue<std::shared_ptr<ICommand>> instructions, int size);
     void setcore(int core);
     [[nodiscard]] int getID() const;
     [[nodiscard]] std::string displayTimestamp() const;
-    std::string executionTime() const;
+    [[nodiscard]] std::string executionTime() const;
     std::queue<std::shared_ptr<ICommand>>* getInstructions();
     std::vector<std::string> getFormattedLogs();
     std::shared_ptr<std::stringstream> getPrintLogs();
-    bool has_cpu_cycled() const;
+    [[nodiscard]] bool has_cpu_cycled() const;
     void set_cpu_cycled(bool cpu_cycled);
     void runInstruction();
-    int getcurrLine() const;
-    int getmaxLine() const;
+    [[nodiscard]] int getcurrLine() const;
+    [[nodiscard]] int getmaxLine() const;
 
 private:
     std::string name;
