@@ -4,13 +4,49 @@
 
 #ifndef PROCESS_H
 #define PROCESS_H
+#include <string>
+#include <chrono>
+#include <queue>
+#include "ICommand.h"
+static int counter = 0;
 
+class process
+{
+public:
+    enum Status
+    {
+        RUNNING,
+        STOPPED,
+        FINISHED
+    };
+    // Constructor
+    process(std::string name);
+    Status getstatus();
+    void setstatus(Status status);
+    std::string getname() const;
+    void setname(std::string name);
+    void setinstructions(std::queue<std::shared_ptr<ICommand>> instructions);
+    void setcore(int core);
+    [[nodiscard]] int getID() const;
+    [[nodiscard]] std::string displayTimestamp() const;
+    std::string executionTime() const;
+    std::queue<std::shared_ptr<ICommand>>* getInstructions();
+    std::vector<std::string> getFormattedLogs();
+    std::shared_ptr<std::stringstream> getPrintLogs();
+    bool has_cpu_cycled() const;
+    void set_cpu_cycled(bool cpu_cycled);
+    void runInstruction();
 
-
-class process {
+private:
+    std::string name;
+    int id;
+    int core = -1;
+    std::chrono::system_clock::time_point creationTime;
+    std::queue<std::shared_ptr<ICommand>> instructions;
+    std::vector<std::string> formattedLogs;
+    Status status;
+    std::shared_ptr<std::stringstream> printLogs;
+    bool hasCPUCycled = false; //can be removed ig
 
 };
-
-
-
 #endif //PROCESS_H
