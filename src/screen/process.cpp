@@ -101,7 +101,7 @@ void process::runInstruction()
         {
             currLine+=1;
             instructions.front()->execute();
-            std::string append = time + "Core: " + std::to_string(this->core) + " " + printLogs->str();
+            std::string append = executionTime() + "Core: " + std::to_string(this->core) + " " + printLogs->str();
             instructions.pop();
             formattedLogs.push_back(append);
         }
