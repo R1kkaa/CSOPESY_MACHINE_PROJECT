@@ -8,9 +8,20 @@ void PrintCommand::execute()
 {
     //adds the print to logs
     ICommand::execute();
-    logs->str(std::string());
-    logs->clear();
-    logs->str(toPrint);
+    //no variable was passed
+    if (var.empty())
+    {
+        logs->str(std::string());
+        logs->clear();
+        auto found = varList->find(var);
+        logs->str(toPrint+ std::to_string(found->second));
+    }
+    //a variable was passed
+    else
+    {
+        logs->str(std::string());
+        logs->clear();
+    }
 }
 int PrintCommand::getsize()
 {

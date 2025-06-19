@@ -7,6 +7,8 @@
 #include <string>
 #include <chrono>
 #include <queue>
+#include <unordered_map>
+
 #include "ICommand.h"
 static int counter = 0;
 
@@ -33,6 +35,7 @@ public:
     std::queue<std::shared_ptr<ICommand>>* getInstructions();
     std::vector<std::string> getFormattedLogs();
     std::shared_ptr<std::stringstream> getPrintLogs();
+    std::shared_ptr<std::unordered_map<std::string, uint16_t>> getvarList();
     [[nodiscard]] bool has_cpu_cycled() const;
     void set_cpu_cycled(bool cpu_cycled);
     void runInstruction();
@@ -51,6 +54,8 @@ private:
     bool hasCPUCycled = false; //can be removed ig
     int currLine = 0;
     int maxLine = 0;
+    std::shared_ptr<std::unordered_map<std::string, uint16_t>> varList;
+
 
 };
 #endif //PROCESS_H

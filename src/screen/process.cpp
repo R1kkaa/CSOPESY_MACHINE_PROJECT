@@ -11,7 +11,7 @@
 
 #include "PrintCommand.h"
 
-process::process(std::string name) : printLogs(std::make_shared<std::stringstream>())
+process::process(std::string name) : printLogs(std::make_shared<std::stringstream>()), varList(std::make_shared<std::unordered_map<std::string, uint16_t>>())
 {
     this->name = std::move(name);
     id=++counter;
@@ -76,6 +76,10 @@ std::shared_ptr<std::stringstream> process::getPrintLogs()
     return printLogs;
 }
 
+std::shared_ptr<std::unordered_map<std::string, uint16_t>> process::getvarList()
+{
+    return varList;
+}
 process::Status process::getstatus()
 {
     return this->status;

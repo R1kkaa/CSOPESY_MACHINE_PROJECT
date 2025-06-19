@@ -11,10 +11,15 @@
 
 class ICommand {
 public:
+    virtual ~ICommand() = default;
+
     enum CommandType
     {
         null,
-        PRINT
+        PRINT,
+        DECLARE,
+        ADD,
+        SUBTRACT,
     };
     ICommand(int pid, CommandType commandType);
     [[nodiscard]] CommandType getCommandType() const;
@@ -40,6 +45,7 @@ inline ICommand::ICommand(int pid, CommandType commandType)
     this->commandType = commandType;
 }
 
-
+static int UINT16_MAX_VAL = 65535;
+static int UINT16_MIN_VAL = 0;
 
 #endif //ICOMMAND_H
