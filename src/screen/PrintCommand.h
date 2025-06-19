@@ -18,6 +18,7 @@ public:
         this->toPrint = toPrint;
     };
     void execute() override;
+    int getsize() override;
 private:
     std::string toPrint;
     std::shared_ptr<std::stringstream> logs;

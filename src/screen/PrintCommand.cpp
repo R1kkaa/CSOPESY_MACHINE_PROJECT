@@ -12,3 +12,7 @@ void PrintCommand::execute()
     logs->clear();
     logs->str(toPrint);
 }
+int PrintCommand::getsize()
+{
+    return 1;
+}

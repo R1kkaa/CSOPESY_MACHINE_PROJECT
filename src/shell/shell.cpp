@@ -15,26 +15,38 @@
 
 
 void Shell::start() {
+
+    //TODO: Read config file first and implement "initialize command" (We can do this last)
+
     std::deque<process> processes;
     std::vector<CPUCore> CPUs;
+    //Vector to put in finished processes
+    //TODO: Implement the scheduler and put the finished processes in this vector
+    std::vector<process> finishedprocesses;
     int Ticks = 0;
     int Delay = 0;
 
-    //generate dummy processes
-    processes = generatedummyprocesses(100);
+    //generate a number of dummy processes with 100 print instructions(count is the number of processes created)
+    processes = generatedummyprocesses(10);
 
     //generate CPUs
     CPUs = generateCPUs(4, &Ticks, &Delay);
 
-    //start scheduler
+    //initialize scheduler
+    //TODO: Add a pointer to the finishedprocess variable in the scheduler constructor so the scheduler can access and put finished processes in the constructor (basically modify scheduler.cpp and add the finishedprocess as a function parameter)
     Scheduler scheduler(&Ticks, &Delay, &processes, false, &CPUs);
 
     //start CPU ticks
+    //TODO: Fix CPU Ticks, can be reimplmented.
     CPUticks count(&Ticks, &Delay);
 
+    //start scheduler and tick counts (currently CPU Ticks does not do anything)
+    //scheduler is the one that starts the CPU threads, check scheduler.cpp for more information
+    //TODO:Fix CPU Ticks
     count.start();
     scheduler.start();
 
+    //Main Menu, command recognition area
     bool run = true;
     Util::printMenu();
     while (run==true) {
@@ -56,6 +68,7 @@ void Shell::start() {
         else if (userInput[0] == "scheduler-stop") {
             std::cout << userInput[0] << " command recognized." << std::endl;
         }
+        //TODO: Add finished processes here
         else if (userInput[0] == "report-util") {
             std::cout << "-----------------------------------" << std::endl;
             std::cout << "Running Processes:" << std::endl;
@@ -67,9 +80,14 @@ void Shell::start() {
             std::cout << "INSERT FINISHED PROCESSES QUEUE HERE" << std::endl;
             std::cout << "----------------------------------" << std::endl;
         }
+        /*TODO: distinguish -r and -s commands, -r is to open an existing process, -s to create a new process
+         *TODO: screen -r <process_name> -> if process exists and not finished, open process (openscreen), if does not exist do nothing/return error
+         *TODO: screen -s <process_name> -> if process does not exist (if !fix find session to not automatically add a process if process_name is not found) create new process and open (use openscreen command), if exists do nothing/return error
+        */
         else if (userInput[0] == "screen" && (userInput[1] == "-r" || userInput[1] == "-s"))
         {
             Util::clearScreen();
+            //findsession either returns an existing process or creates a new process, openscreen opens the said process
             openscreen(findsession(CPUs, processes, userInput[2]));
         }
         else {
@@ -81,6 +99,8 @@ void Shell::start() {
     }
 }
 
+//Finds if process currently exists and is in the CPU/Ready Queue
+//TODO: Current implementation is if process is not found, then create new proccess and add it into the ReadyQueue (process deque), fix this so that it only checks if the process exists, can another function for actual process retrieval (?)
 process* Shell::findsession(std::vector<CPUCore>& CPUs, std::deque<process>& processes, std::string name)
 {
     //check cpu cores
@@ -104,6 +124,7 @@ process* Shell::findsession(std::vector<CPUCore>& CPUs, std::deque<process>& pro
     return &processes.back();
 }
 
+//Opens the process passed
 void Shell::openscreen(process* screen)
 {
     bool run = true;
@@ -128,6 +149,8 @@ void Shell::openscreen(process* screen)
         }
     }
 }
+
+//WEEK 6: generates a print process
 process Shell::generatedummyprocess(std::string name)
 {
     process newprocess(name);
@@ -141,6 +164,7 @@ process Shell::generatedummyprocess(std::string name)
     return newprocess;
 }
 
+//WEEK 6: generates a COUNT amount of print process and returns a deque
 std::deque<process> Shell::generatedummyprocesses(int count)
 {
     std::deque<process> newprocesses;
@@ -151,6 +175,7 @@ std::deque<process> Shell::generatedummyprocesses(int count)
     return newprocesses;
 }
 
+//Generate CPU, returns a CPU Vector
 std::vector<CPUCore> Shell::generateCPUs(int num, int *Ticks, int *Delay)
 {
     std::vector<CPUCore> CPUs;

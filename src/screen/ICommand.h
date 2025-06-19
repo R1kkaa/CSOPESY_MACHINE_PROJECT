@@ -17,8 +17,9 @@ public:
         PRINT
     };
     ICommand(int pid, CommandType commandType);
-    CommandType getCommandType() const;
+    [[nodiscard]] CommandType getCommandType() const;
     virtual void execute();
+    virtual int getsize();
 
 protected:
     int pid;

@@ -93,10 +93,13 @@ void process::set_cpu_cycled(bool cpu_cycled)
     hasCPUCycled=cpu_cycled;
 }
 
+//TODO: Finish all commands
 void process::runInstruction()
 {
+    //if there are still instructions
     if (!instructions.empty())
         currLine+=1;
+        //if current command is PRINT
         if (instructions.front()->getCommandType() == ICommand::PRINT)
         {
             currLine+=1;
@@ -104,6 +107,7 @@ void process::runInstruction()
             std::string append = executionTime() + "Core: " + std::to_string(this->core) + " " + printLogs->str();
             instructions.pop();
             formattedLogs.push_back(append);
+            //TODO WEEK 6 ASSIGNMENT: open/create file here and write append the "std::string append" variable as one line, this will make a line in the log
         }
     if (instructions.empty())
     {
