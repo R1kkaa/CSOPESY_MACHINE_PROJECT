@@ -48,54 +48,92 @@ void Shell::start() {
 
     //Main Menu, command recognition area
     bool run = true;
+    bool initialized = false;
+    bool backToMain = true;
     Util::printMenu();
-    while (run==true) {
+    while (run) {
+        Util::printMenu();
         std::vector<std::string> userInput = Util::readInput();
-        if (userInput[0] == "exit") {
-            std::cout << userInput[0] << " command recognized." << std::endl;
-            run = false;
-        }
-        else if (userInput[0] == "clear") {
-            std::cout << userInput[0] << " command recognized." << std::endl;
-            Util::printMenu();
-        }
-        else if (userInput[0] == "initialize") {
-            std::cout << userInput[0] << " command recognized." << std::endl;
-        }
-        else if (userInput[0] == "scheduler-test") {
-            std::cout << userInput[0] << " command recognized." << std::endl;
-        }
-        else if (userInput[0] == "scheduler-stop") {
-            std::cout << userInput[0] << " command recognized." << std::endl;
-        }
-        //TODO: Add finished processes here
-        else if (userInput[0] == "report-util") {
-            std::cout << "-----------------------------------" << std::endl;
-            std::cout << "Running Processes:" << std::endl;
-            for (int i = 0; i < CPUs.size(); i++)
-            {
-                std::cout << CPUs.at(i).curr_process().getname() << "   " + CPUs.at(i).curr_process().displayTimestamp() + "    Core: " + std::to_string(i) + "     " + std::to_string(CPUs.at(i).curr_process().getcurrLine()) + "/" + std::to_string(CPUs.at(i).curr_process().getmaxLine()) << std::endl;
+        try {
+            userInput.at(0); //anti out of range error
+            if (userInput[0] != "initialize" && !initialized) {
+                std::cout << "Kindly initialize first." << std::endl;
+                system("pause");
             }
-            std::cout << "\nFinished Processes:" << std::endl;
-            std::cout << "INSERT FINISHED PROCESSES QUEUE HERE" << std::endl;
-            std::cout << "----------------------------------" << std::endl;
+            else if (userInput[0] == "initialize") {
+                std::cout << userInput[0] << " command recognized." << std::endl;
+                system("pause");
+                initialized = true;
+            }
+            else if (userInput[0] == "exit") {
+                std::cout << userInput[0] << " command recognized." << std::endl;
+                exit(0);
+            }
+            else if (userInput[0] == "clear" && initialized) {
+                std::cout << userInput[0] << " command recognized." << std::endl;
+                Util::printMenu();
+            }
+            else if (userInput[0] == "scheduler-start" && initialized) {
+                std::cout << userInput[0] << " command recognized." << std::endl;
+            }
+            else if (userInput[0] == "scheduler-stop" && initialized) {
+                std::cout << userInput[0] << " command recognized." << std::endl;
+            }
+
+            //TODO: Add finished process here
+            else if (userInput[0] == "screen" && userInput[1] == "-ls" && initialized) {
+                backToMain = false;
+                while (!backToMain) {
+                    Util::printMenu();
+                    std::cout << "-----------------------------------" << std::endl;
+                    std::cout << "Running Processes:" << std::endl;
+                    for (int i = 0; i < CPUs.size(); i++)
+                    {
+                        std::cout << CPUs.at(i).curr_process().getname() << "   " + CPUs.at(i).curr_process().displayTimestamp() + "    Core: " + std::to_string(i) + "     " + std::to_string(CPUs.at(i).curr_process().getcurrLine()) + "/" + std::to_string(CPUs.at(i).curr_process().getmaxLine()) << std::endl;
+                    }
+                    std::cout << "\nFinished Processes:" << std::endl;
+                    std::cout << "INSERT FINISHED PROCESSES QUEUE HERE" << std::endl;
+                    /*if(currBurst == maxBurst OR process::FINISHED){
+                        std::cout << CPUs.at(i).curr_process().getname() << "   " + CPUs.at(i).curr_process().displayTimestamp() + "    Core: " + std::to_string(i) + "     " + std::to_string(CPUs.at(i).curr_process().getcurrLine()) + "/" + std::to_string(CPUs.at(i).curr_process().getmaxLine()) << std::endl;
+                    }*/
+                    std::cout << "----------------------------------" << std::endl;
+                    std::vector<std::string> userInput = Util::readInput();
+                    if (userInput[0] == "exit") {
+                        backToMain = true;
+                    }
+                    else if (userInput[0] != "screen" || userInput[1] != "-ls") {
+                        std::cout << "command not found." << std::endl;
+                        system("pause");
+                    }
+                }
+            }
+
+            //TODO: Add adding to file here
+            else if (userInput[0] == "report-util" && initialized) {
+                std::cout << userInput[0] << " command recognized." << std::endl;
+            }
+            /*TODO: distinguish -r and -s commands, -r is to open an existing process, -s to create a new process
+             *TODO: screen -r <process_name> -> if process exists and not finished, open process (openscreen), if does not exist do nothing/return error
+             *TODO: screen -s <process_name> -> if process does not exist (if !fix find session to not automatically add a process if process_name is not found) create new process and open (use openscreen command), if exists do nothing/return error
+            */
+            else if (initialized && userInput[0] == "screen" && (userInput[1] == "-r" && userInput[1] == "-s"))
+            {
+                Util::clearScreen();
+                //findsession either returns an existing process or creates a new process, openscreen opens the said process
+                openscreen(findsession(CPUs, processes, userInput[2]));
+            }
+            else {
+                for (auto i : userInput)
+                    std::cout << i << ' ';
+                std::cout << "command not found." << std::endl;
+                system("pause");
+                std::cin.clear();
+            }
+            std::cout << std::endl;
         }
-        /*TODO: distinguish -r and -s commands, -r is to open an existing process, -s to create a new process
-         *TODO: screen -r <process_name> -> if process exists and not finished, open process (openscreen), if does not exist do nothing/return error
-         *TODO: screen -s <process_name> -> if process does not exist (if !fix find session to not automatically add a process if process_name is not found) create new process and open (use openscreen command), if exists do nothing/return error
-        */
-        else if (userInput[0] == "screen" && (userInput[1] == "-r" || userInput[1] == "-s"))
-        {
-            Util::clearScreen();
-            //findsession either returns an existing process or creates a new process, openscreen opens the said process
-            openscreen(findsession(CPUs, processes, userInput[2]));
+        catch (const std::out_of_range& e) {
+            //catch out of bounds
         }
-        else {
-            for (auto i: userInput)
-                std::cout << i << ' ';
-            std::cout << "command not found." << std::endl;
-        }
-        std::cout << std::endl;
     }
 }
 
@@ -104,7 +142,7 @@ void Shell::start() {
 process* Shell::findsession(std::vector<CPUCore>& CPUs, std::deque<process>& processes, std::string name)
 {
     //check cpu cores
-    for (auto& i: CPUs)
+    for (auto& i : CPUs)
     {
         if (i.currProcess.getname() == name)
         {
@@ -115,7 +153,7 @@ process* Shell::findsession(std::vector<CPUCore>& CPUs, std::deque<process>& pro
     //check ready queue
     auto it2 = std::ranges::find_if(processes, [&](const process& process) {
         return process.getname() == name;
-    });
+        });
     if (it2 != processes.end()) {
         return &*it2;  // Return pointer to the found Screen
     }
@@ -134,14 +172,14 @@ void Shell::openscreen(process* screen)
         std::vector<std::string> userInput = Util::readInput();
         if (userInput[0] == "exit")
         {
-            run=false;
+            run = false;
             Util::printMenu();
         }
         if (userInput[0] == "process-smi")
         {
             std::cout << "Logs: \n\n";
             auto logs = screen->getFormattedLogs();
-            for (auto i: logs)
+            for (auto i : logs)
             {
                 std::cout << i << std::endl;
             }
@@ -170,18 +208,18 @@ std::deque<process> Shell::generatedummyprocesses(int count)
     std::deque<process> newprocesses;
     for (int i = 0; i < count; i++)
     {
-        newprocesses.push_back(generatedummyprocess("process_"+std::to_string(i)));
+        newprocesses.push_back(generatedummyprocess("process_" + std::to_string(i)));
     }
     return newprocesses;
 }
 
 //Generate CPU, returns a CPU Vector
-std::vector<CPUCore> Shell::generateCPUs(int num, int *Ticks, int *Delay)
+std::vector<CPUCore> Shell::generateCPUs(int num, int* Ticks, int* Delay)
 {
     std::vector<CPUCore> CPUs;
     for (int i = 0; i < num; i++)
     {
-        CPUs.push_back(CPUCore(Ticks,Delay, i));
+        CPUs.push_back(CPUCore(Ticks, Delay, i));
     }
     return CPUs;
 }

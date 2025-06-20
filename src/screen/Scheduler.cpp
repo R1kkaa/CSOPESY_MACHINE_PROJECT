@@ -41,8 +41,34 @@ void Scheduler::run()
                 cpu->start();
 
             }
-            //TODO: if cpu is already running, then each tick, run the algorithm, if process status is done, then switch algorithms. Can use if(cpu->curr_process().getstatus() == process::FINISHED) then switch process
+            //TODO: if cpu is already running, then each tick, run the algorithm, if process status is done, then switch process. Can use if(cpu->curr_process().getstatus() == process::FINISHED) then switch process
+            else {
+                if (cpu->curr_process().getstatus() != process::FINISHED) {
+                    /*assign cpu -> curr_process into process i until instruction 100/100
+                    currprocess.pop*/
+                }
+                else {
+                    //scheduler thread start
+                    if (cpu->curr_process().getstatus() == process::FINISHED) {
+                        //push the finished process to the finished processes vector
+                        
+                        //finishedProcesses.push_back(cpu->finished_process());
 
+                        if (!ReadyQueue->empty()) {
+                            //put the current process back to the ready queue
+                            ReadyQueue->push_back(cpu->curr_process());
+                            //set the current process to the next process in the ready queue
+                            cpu->set_curr_process(ReadyQueue->front(), ReadyQueue);
+                            //remove the current process from the ready queue since it is already in the cpu
+                            ReadyQueue->pop_front();
+                        }
+                        else {
+                            //if there are no more processes, set the CPU to not running
+                            cpu->set_running(false);
+                        }
+                    }
+                }
+            }
         }
     }
     //TODO: Implement RR here
