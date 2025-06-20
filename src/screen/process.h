@@ -52,7 +52,7 @@ private:
     Status status;
     std::shared_ptr<std::stringstream> printLogs;
     bool hasCPUCycled = false; //can be removed ig
-    int currLine = 0;
+    int currLine = -1;
     int maxLine = 0;
     std::shared_ptr<std::unordered_map<std::string, uint16_t>> varList;
 

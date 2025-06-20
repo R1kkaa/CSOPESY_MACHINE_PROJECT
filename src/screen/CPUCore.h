@@ -14,6 +14,7 @@ public:
     int* Delay;
     int id;
     bool running;
+    bool done;
 
     CPUCore(int* CPUticks,int* Delay, int id);
     void run() override;
@@ -21,6 +22,8 @@ public:
     bool get_running();
     void set_running(bool running);
     void set_curr_process(process curr_process, std::deque<process>* ReadyQueue);
+    bool getdone();
+    void setdone(bool done);
 };
 
 

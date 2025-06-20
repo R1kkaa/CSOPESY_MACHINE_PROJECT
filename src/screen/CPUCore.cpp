@@ -3,12 +3,15 @@
 //
 
 #include "CPUCore.h"
+
+#include <utility>
 CPUCore::CPUCore(int* CPUticks, int* Delay, int id): currProcess("init")
 {
     this->CPUticks = CPUticks;
     this->Delay = Delay;
     this->id = id;
     this->running = false;
+    this->done = false;
 }
 
 void CPUCore::run()
@@ -44,7 +47,17 @@ void CPUCore::set_curr_process(process curr_process, std::deque<process>* ReadyQ
         currProcess.setstatus(process::STOPPED);
         ReadyQueue->push_back(currProcess);
     }
-    currProcess = curr_process;
+    currProcess = std::move(curr_process);
     currProcess.setstatus(process::RUNNING);
     currProcess.setcore(this->id);
+}
+
+bool CPUCore::getdone()
+{
+    return done;
+}
+
+void CPUCore::setdone(bool done)
+{
+    this->done = done;
 }

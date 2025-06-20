@@ -23,7 +23,9 @@ void Scheduler::run()
 {
     //TODO: add switching processes with the scheduler algorithms
     //if algo is not round robin, and ready queue still isn't empty
-    if (!isRR && !ReadyQueue->empty())
+    while (true)
+    {
+        if (!isRR && !ReadyQueue->empty())
     {
         //do this every x tick with x being the delay-1 (idk how to implement)
         //iterates through the cpus
@@ -52,18 +54,26 @@ void Scheduler::run()
                     //push the finished process to the finished processes vector
                     FinishedQueue->push_back(cpu->curr_process());
                     if (!ReadyQueue->empty()) {
-                        //put the current process back to the ready queue & set the current process to the next process in the ready queue
+                        //change the process
                         cpu->set_curr_process(ReadyQueue->front(), ReadyQueue);
                         //remove the current process from the ready queue since it is already in the cpu
                         ReadyQueue->pop_front();
                     }
                     else {
-                        //if there are no more processes, set the CPU to not running
-                        cpu->set_running(false);
+                        //if there are no more processes in the ready queue, set the CPU to not running
+                        if (ReadyQueue->empty() && !cpu->getdone())
+                        {
+                            if (cpu->curr_process().getstatus() == process::FINISHED)
+                            {
+                                cpu->setdone(true);
+                                cpu->set_running(false);
+                            }
+                        }
                     }
                 }
             }
         }
+    }
     }
     //TODO: Implement RR here
 }

@@ -102,16 +102,19 @@ void process::runInstruction()
 {
     //if there are still instructions
     if (!instructions.empty())
-        currLine+=1;
         //if current command is PRINT
         if (instructions.front()->getCommandType() == ICommand::PRINT)
         {
-            currLine+=1;
             instructions.front()->execute();
             std::string append = "(" + executionTime() + ") " + "Core: " + std::to_string(this->core) + ", " + printLogs->str();
             instructions.pop();
             formattedLogs.push_back(append);
             //TODO WEEK 6 ASSIGNMENT: open/create file here and write append the "std::string append" variable as one line, this will make a line in the log
+            currLine+=1;
+            if (instructions.empty())
+            {
+                status=FINISHED;
+            }
         }
     if (instructions.empty())
     {

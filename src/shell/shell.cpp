@@ -95,19 +95,19 @@ void Shell::start(){
                     std::cout << "Running Processes:" << std::endl;
                     for (int i = 0; i < CPUs.size(); i++)
                     {
-                        if (CPUs.at(i).curr_process().getcurrLine() >= CPUs.at(i).curr_process().getmaxLine()) {
-                            std::cout << CPUs.at(i).curr_process().getname() << "   " + CPUs.at(i).curr_process().displayTimestamp() + "    Core: " + std::to_string(i) + "     " + std::to_string(CPUs.at(i).curr_process().getcurrLine()) + "/" + std::to_string(CPUs.at(i).curr_process().getmaxLine()) << std::endl;
+                        if (CPUs.at(i).get_running()) {
+                            std::cout << CPUs.at(i).curr_process().getname() << "   " + CPUs.at(i).curr_process().displayTimestamp() + "    Core: " + std::to_string(i) + "     " + std::to_string(CPUs.at(i).curr_process().getcurrLine()) + "/" + std::to_string(CPUs.at(i).curr_process().getmaxLine()) + "STATUS: " + std::to_string(CPUs.at(i).curr_process().getstatus())<< std::endl;
                         }
-                        else {
-                            finishedprocesses.push_back(CPUs.at(i).curr_process()); //add finished process to the finished processes 
-						}
+                        else
+                        {
+                            std::cout <<  "Core: " + std::to_string(i) + "     Status: Idle" << std::endl;
+
+                        }
                     }
                     std::cout << "\nFinished Processes:" << std::endl;
-                    std::cout << "INSERT FINISHED PROCESSES QUEUE HERE" << std::endl;
                     std::cout << "----------------------------------" << std::endl;
-                    for(auto process:finishedprocesses) {
-                        std::cout << "test, process her \n";
-                        std::cout << process.getname() << "   " + process.displayTimestamp() + "    ID: " + std::to_string(process.getID()) + "     " + std::to_string(process.getcurrLine()) + "/" + std::to_string(process.getmaxLine()) << std::endl;
+                    for(const auto& process:finishedprocesses) {
+                        std::cout << process.getname() << "   " + process.displayTimestamp() + "    STATUS: FINISHED     " + std::to_string(process.getcurrLine()) + "/" + std::to_string(process.getmaxLine()) << std::endl;
 					}
                     std::vector<std::string> userInput = Util::readInput();
                     if (userInput[0] == "exit") {
