@@ -8,6 +8,7 @@
 #include <string>
 #include <sstream>
 #include <utility>
+#include <fstream>
 
 #include "PrintCommand.h"
 
@@ -100,25 +101,37 @@ void process::set_cpu_cycled(bool cpu_cycled)
 //TODO: Finish all commands
 void process::runInstruction()
 {
-    //if there are still instructions
+    // if there are still instructions
     if (!instructions.empty())
-        //if current command is PRINT
+    {
+        // if current command is PRINT
         if (instructions.front()->getCommandType() == ICommand::PRINT)
         {
             instructions.front()->execute();
-            std::string append = "(" + executionTime() + ") " + "Core: " + std::to_string(this->core) + ", " + printLogs->str();
+            std::string append = "(" + executionTime() + ") " + "Core:" + std::to_string(this->core) + " " + printLogs->str();
             instructions.pop();
             formattedLogs.push_back(append);
-            //TODO WEEK 6 ASSIGNMENT: open/create file here and write append the "std::string append" variable as one line, this will make a line in the log
-            currLine+=1;
+
+            std::string filename = this->getname() + ".txt";
+            std::ofstream logFile(filename, std::ios::app); // open in append mode
+            if (logFile.is_open())
+            {
+                logFile << append << std::endl;
+                logFile.close();
+            }
+            else
+            {
+                std::cerr << "Error: could not open log file for " << this->getname() << std::endl;
+            }
+            printLogs->str("");
+            printLogs->clear();
+
+            currLine += 1;
             if (instructions.empty())
             {
-                status=FINISHED;
+                status = FINISHED;
             }
         }
-    if (instructions.empty())
-    {
-        status=FINISHED;
     }
 }
 

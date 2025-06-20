@@ -93,7 +93,7 @@ void Shell::start(){
                 for (int i = 0; i < CPUs.size(); i++)
                 {
                     if (CPUs.at(i).get_running()) {
-                        std::cout << CPUs.at(i).curr_process().getname() << "   " + CPUs.at(i).curr_process().displayTimestamp() + "    Core: " + std::to_string(i) + "     " + std::to_string(CPUs.at(i).curr_process().getcurrLine()) + "/" + std::to_string(CPUs.at(i).curr_process().getmaxLine()) + "STATUS: " + std::to_string(CPUs.at(i).curr_process().getstatus())<< std::endl;
+                        std::cout << CPUs.at(i).curr_process().getname() << "   " + CPUs.at(i).curr_process().displayTimestamp() + "    Core: " + std::to_string(i) + "     " + std::to_string(CPUs.at(i).curr_process().getcurrLine()) + "/" + std::to_string(CPUs.at(i).curr_process().getmaxLine())<< std::endl;
                     }
                     else
                     {
