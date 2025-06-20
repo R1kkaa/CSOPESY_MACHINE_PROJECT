@@ -49,10 +49,8 @@ void Shell::start(){
     //Main Menu, command recognition area
     bool run = true;
     bool initialized = false;
-    bool backToMain = true;
     Util::printMenu();
     while (run) {
-        Util::printMenu();
         std::vector<std::string> userInput = Util::readInput();
         try {
             userInput.at(0); //anti out of range error
@@ -64,6 +62,7 @@ void Shell::start(){
                 std::cout << userInput[0] << " command recognized." << std::endl;
                 system("pause");
                 initialized = true;
+                Util::printMenu();
             }
             else if (userInput[0] == "exit") {
                 std::cout << userInput[0] << " command recognized." << std::endl;
@@ -88,35 +87,23 @@ void Shell::start(){
 
             //TODO: Add finished process here
             else if (userInput[0] == "screen" && userInput[1] == "-ls" && initialized) {
-                backToMain = false;
-                while (!backToMain) {
-                    Util::printMenu();
-                    std::cout << "-----------------------------------" << std::endl;
-                    std::cout << "Running Processes:" << std::endl;
-                    for (int i = 0; i < CPUs.size(); i++)
+                Util::printMenu();
+                std::cout << "-----------------------------------" << std::endl;
+                std::cout << "Running Processes:" << std::endl;
+                for (int i = 0; i < CPUs.size(); i++)
+                {
+                    if (CPUs.at(i).get_running()) {
+                        std::cout << CPUs.at(i).curr_process().getname() << "   " + CPUs.at(i).curr_process().displayTimestamp() + "    Core: " + std::to_string(i) + "     " + std::to_string(CPUs.at(i).curr_process().getcurrLine()) + "/" + std::to_string(CPUs.at(i).curr_process().getmaxLine()) + "STATUS: " + std::to_string(CPUs.at(i).curr_process().getstatus())<< std::endl;
+                    }
+                    else
                     {
-                        if (CPUs.at(i).get_running()) {
-                            std::cout << CPUs.at(i).curr_process().getname() << "   " + CPUs.at(i).curr_process().displayTimestamp() + "    Core: " + std::to_string(i) + "     " + std::to_string(CPUs.at(i).curr_process().getcurrLine()) + "/" + std::to_string(CPUs.at(i).curr_process().getmaxLine()) + "STATUS: " + std::to_string(CPUs.at(i).curr_process().getstatus())<< std::endl;
-                        }
-                        else
-                        {
-                            std::cout <<  "Core: " + std::to_string(i) + "     Status: Idle" << std::endl;
-
-                        }
+                        std::cout <<  "Core: " + std::to_string(i) + "     Status: Idle" << std::endl;
                     }
-                    std::cout << "\nFinished Processes:" << std::endl;
-                    std::cout << "----------------------------------" << std::endl;
-                    for(const auto& process:finishedprocesses) {
-                        std::cout << process.getname() << "   " + process.displayTimestamp() + "    STATUS: FINISHED     " + std::to_string(process.getcurrLine()) + "/" + std::to_string(process.getmaxLine()) << std::endl;
-					}
-                    std::vector<std::string> userInput = Util::readInput();
-                    if (userInput[0] == "exit") {
-                        backToMain = true;
-                    }
-                    else if (userInput[0] != "screen" || userInput[1] != "-ls") {
-                        std::cout << "command not found." << std::endl;
-                        system("pause");
-                    }
+                }
+                std::cout << "\nFinished Processes:" << std::endl;
+                std::cout << "----------------------------------" << std::endl;
+                for(const auto& process:finishedprocesses) {
+                    std::cout << process.getname() << "   " + process.displayTimestamp() + "    STATUS: FINISHED     " + std::to_string(process.getcurrLine()) + "/" + std::to_string(process.getmaxLine()) << std::endl;
                 }
             }
 

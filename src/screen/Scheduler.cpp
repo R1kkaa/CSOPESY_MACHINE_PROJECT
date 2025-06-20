@@ -35,7 +35,7 @@ void Scheduler::run()
             //gets current cpu in iteration
             CPUCore* cpu = &CPUs->at(i);
             //if cpu is not yet running (has not been started yet)
-            if (cpu->get_running() == 0)
+            if (cpu->get_running() == 0 && !ReadyQueue->empty())
             {
                 //set the current process of the cpu to the front of the ready queue, also puts back the process that was in the CPU back to the ReadyQueue
                 cpu->set_curr_process(ReadyQueue->front(), ReadyQueue);
