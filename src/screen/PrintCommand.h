@@ -11,6 +11,7 @@
 #include <memory>
 #include <unordered_map>
 #include <utility>
+#include <sstream>
 
 class PrintCommand: public ICommand {
 public:
