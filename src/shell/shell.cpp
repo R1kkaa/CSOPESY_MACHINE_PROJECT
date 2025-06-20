@@ -7,12 +7,12 @@
 #include <queue>
 #include <iterator>
 #include <memory>
+#include <algorithm>
 
 #include "../screen/CPUticks.h"
 #include "../screen/CPUCore.h"
 #include "../screen/PrintCommand.h"
 #include "../screen/Scheduler.h"
-
 
 void Shell::start() {
 
@@ -113,7 +113,7 @@ process* Shell::findsession(std::vector<CPUCore>& CPUs, std::deque<process>& pro
     }
 
     //check ready queue
-    auto it2 = std::ranges::find_if(processes, [&](const process& process) {
+    auto it2 = std::find_if(processes.begin(), processes.end(), [&](const process& process) {
         return process.getname() == name;
     });
     if (it2 != processes.end()) {

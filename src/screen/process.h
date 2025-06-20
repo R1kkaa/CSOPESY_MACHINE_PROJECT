@@ -8,6 +8,9 @@
 #include <chrono>
 #include <queue>
 #include <unordered_map>
+#include <vector>
+#include <memory>
+#include <sstream>
 
 #include "ICommand.h"
 static int counter = 0;
