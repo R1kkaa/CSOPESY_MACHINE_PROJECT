@@ -7,14 +7,17 @@
 #include <algorithm>
 
 //TODO: fix scheduler.cpp and scheduler.h, add the finishedprocess pointer as a class attribute so we can put finishedprocesses there
-Scheduler::Scheduler(int* CPUticks, int* Delay, std::deque<process>* ReadyQueue, std::deque<process>& FinishedQueue, bool isRR, std::vector<CPUCore>* CPUs)
+Scheduler::Scheduler(int* CPUticks, int* Delay, std::deque<process>* ReadyQueue, std::vector<process>* FinishedQueue, bool isRR, std::vector<CPUCore>* CPUs)
 {
+	this->FinishedQueue = FinishedQueue;
     this->ReadyQueue = ReadyQueue;
     this->isRR = isRR;
     this->CPUs = CPUs;
     this->CPUticks = CPUticks;
     this->Delay = Delay;
 }
+
+
 
 void Scheduler::run()
 {
@@ -26,6 +29,7 @@ void Scheduler::run()
         //iterates through the cpus
         for (int i = 0; i < CPUs->size(); i++)
         {
+            std::this_thread::sleep_for(std::chrono::milliseconds(1000));
             //gets current cpu in iteration
             CPUCore* cpu = &CPUs->at(i);
             //if cpu is not yet running (has not been started yet)
@@ -46,12 +50,9 @@ void Scheduler::run()
                 //scheduler thread start
                 if (cpu->curr_process().getstatus() == process::FINISHED) {
                     //push the finished process to the finished processes vector
-                     
-                    FinishedQueue.push_back(cpu->curr_process());
+                    FinishedQueue->push_back(cpu->curr_process());
                     if (!ReadyQueue->empty()) {
-                        //put the current process back to the ready queue
-                        ReadyQueue->push_back(cpu->curr_process());
-                        //set the current process to the next process in the ready queue
+                        //put the current process back to the ready queue & set the current process to the next process in the ready queue
                         cpu->set_curr_process(ReadyQueue->front(), ReadyQueue);
                         //remove the current process from the ready queue since it is already in the cpu
                         ReadyQueue->pop_front();
@@ -65,5 +66,9 @@ void Scheduler::run()
         }
     }
     //TODO: Implement RR here
+}
+
+std::vector<process>* Scheduler::getFinishedQueue() {  
+    return FinishedQueue;
 }
 
