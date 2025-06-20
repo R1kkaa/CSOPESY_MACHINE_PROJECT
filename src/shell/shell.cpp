@@ -93,6 +93,9 @@ void Shell::start() {
                     }
                     std::cout << "\nFinished Processes:" << std::endl;
                     std::cout << "INSERT FINISHED PROCESSES QUEUE HERE" << std::endl;
+                    /*if(currBurst == maxBurst OR process::FINISHED){
+                        std::cout << CPUs.at(i).curr_process().getname() << "   " + CPUs.at(i).curr_process().displayTimestamp() + "    Core: " + std::to_string(i) + "     " + std::to_string(CPUs.at(i).curr_process().getcurrLine()) + "/" + std::to_string(CPUs.at(i).curr_process().getmaxLine()) << std::endl;
+                    }*/
                     std::cout << "----------------------------------" << std::endl;
                     std::vector<std::string> userInput = Util::readInput();
                     if (userInput[0] == "exit") {
