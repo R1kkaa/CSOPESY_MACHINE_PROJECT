@@ -25,7 +25,7 @@ void Scheduler::run()
     //if algo is not round robin, and ready queue still isn't empty
     while (true)
     {
-        if (!isRR && !ReadyQueue->empty())
+        if (!isRR)
     {
         //do this every x tick with x being the delay-1 (idk how to implement)
         //iterates through the cpus
