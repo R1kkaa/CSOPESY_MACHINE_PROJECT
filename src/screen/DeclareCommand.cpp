@@ -6,10 +6,11 @@
 void DeclareCommand::execute()
 {
     ICommand::execute();
+    //TODO: add check if varlist empty
     auto found = varList->find(name);
     if (found != varList->end())
     {
-        found->second() = value;
+        found->second = value;
     }
     else
     {

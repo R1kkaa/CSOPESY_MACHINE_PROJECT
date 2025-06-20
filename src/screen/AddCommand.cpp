@@ -9,10 +9,11 @@ void AddCommand::execute()
     int var1;
     int var2;
 
+    //TODO: add check if varlist empty
     auto found = varList->find(this->var1);
     if (found != varList->end())
     {
-        var1 = found->second();
+        var1 = found->second;
     }
     else
     {
@@ -22,7 +23,7 @@ void AddCommand::execute()
     found = varList->find(this->var2);
     if (found != varList->end())
     {
-        var2 = found->second();
+        var2 = found->second;
     }
     else
     {
@@ -41,7 +42,7 @@ void AddCommand::execute()
     found = varList->find(this->result);
     if (found != varList->end())
     {
-        found->second() = result;
+        found->second = result;
     }
     else
     {
