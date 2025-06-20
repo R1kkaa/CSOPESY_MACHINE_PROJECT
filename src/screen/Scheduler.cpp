@@ -7,7 +7,7 @@
 #include <algorithm>
 
 //TODO: fix scheduler.cpp and scheduler.h, add the finishedprocess pointer as a class attribute so we can put finishedprocesses there
-Scheduler::Scheduler(int* CPUticks, int* Delay, std::deque<process>* ReadyQueue, bool isRR, std::vector<CPUCore>* CPUs)
+Scheduler::Scheduler(int* CPUticks, int* Delay, std::deque<process>* ReadyQueue, std::deque<process>& FinishedQueue, bool isRR, std::vector<CPUCore>* CPUs)
 {
     this->ReadyQueue = ReadyQueue;
     this->isRR = isRR;
@@ -42,7 +42,26 @@ void Scheduler::run()
 
             }
             //TODO: if cpu is already running, then each tick, run the algorithm, if process status is done, then switch algorithms. Can use if(cpu->curr_process().getstatus() == process::FINISHED) then switch process
-
+            else {
+                //scheduler thread start
+                if (cpu->curr_process().getstatus() == process::FINISHED) {
+                    //push the finished process to the finished processes vector
+                     
+                    FinishedQueue.push_back(cpu->curr_process());
+                    if (!ReadyQueue->empty()) {
+                        //put the current process back to the ready queue
+                        ReadyQueue->push_back(cpu->curr_process());
+                        //set the current process to the next process in the ready queue
+                        cpu->set_curr_process(ReadyQueue->front(), ReadyQueue);
+                        //remove the current process from the ready queue since it is already in the cpu
+                        ReadyQueue->pop_front();
+                    }
+                    else {
+                        //if there are no more processes, set the CPU to not running
+                        cpu->set_running(false);
+                    }
+                }
+            }
         }
     }
     //TODO: Implement RR here
