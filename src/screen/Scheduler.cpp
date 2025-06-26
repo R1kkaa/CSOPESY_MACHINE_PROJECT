@@ -5,16 +5,17 @@
 #include "Scheduler.h"
 
 #include <algorithm>
-
+int TICK_DELAY = 100;
 //TODO: fix scheduler.cpp and scheduler.h, add the finishedprocess pointer as a class attribute so we can put finishedprocesses there
-Scheduler::Scheduler(int* CPUticks, int* Delay, std::deque<process>* ReadyQueue, std::vector<process>* FinishedQueue, bool isRR, std::vector<CPUCore>* CPUs)
+Scheduler::Scheduler(int Delay, std::deque<process>* ReadyQueue, std::vector<process>* FinishedQueue, bool isRR, std::vector<CPUCore>* CPUs)
 {
 	this->FinishedQueue = FinishedQueue;
     this->ReadyQueue = ReadyQueue;
     this->isRR = isRR;
     this->CPUs = CPUs;
-    this->CPUticks = CPUticks;
-    this->Delay = Delay;
+    this->CPUticks = 0;
+    this->Delay = Delay + 1;
+
 }
 
 
@@ -25,18 +26,17 @@ void Scheduler::run()
     //if algo is not round robin, and ready queue still isn't empty
     while (true)
     {
+        //check sleeping processes here
         if (!isRR)
-    {
-        //do this every x tick with x being the delay-1 (idk how to implement)
-        //iterates through the cpus
+        {
         for (int i = 0; i < CPUs->size(); i++)
         {
-            std::this_thread::sleep_for(std::chrono::milliseconds(1000));
             //gets current cpu in iteration
             CPUCore* cpu = &CPUs->at(i);
             //if cpu is not yet running (has not been started yet)
             if (cpu->get_running() == false && !ReadyQueue->empty())
             {
+                cpu->setScheduler(this);
                 //set the current process of the cpu to the front of the ready queue, also puts back the process that was in the CPU back to the ReadyQueue
                 cpu->set_curr_process(ReadyQueue->front(), ReadyQueue);
                 //sets the CPU to running
@@ -47,15 +47,24 @@ void Scheduler::run()
                 cpu->start();
 
             }
-            //TODO: if cpu is already running, then each tick, run the algorithm, if process status is done, then switch algorithms. Can use if(cpu->curr_process().getstatus() == process::FINISHED) then switch process
             else if (cpu->get_running() == true){
                 //scheduler thread start
-                if (cpu->curr_process().getstatus() == process::FINISHED) {
+                if (!ReadyQueue->empty())
+                {
+                    cpu->setdone(false);
+                }
+                if (cpu->curr_process().getstatus() == process::FINISHED && cpu->getdone() == false) {
                     //push the finished process to the finished processes vector
-                    FinishedQueue->push_back(cpu->curr_process());
+                    if (!cpu->getSentToFinishedVector())
+                    {
+                        FinishedQueue->push_back(cpu->curr_process());
+                        cpu->setSenTtoFinishedVector(true);
+                    }
                     if (!ReadyQueue->empty()) {
                         //change the process
                         cpu->set_curr_process(ReadyQueue->front(), ReadyQueue);
+                        //reset value since has not been sent to finished vector
+                        cpu->setSenTtoFinishedVector(false);
                         //remove the current process from the ready queue since it is already in the cpu
                         ReadyQueue->pop_front();
                     }
@@ -66,7 +75,6 @@ void Scheduler::run()
                             if (cpu->curr_process().getstatus() == process::FINISHED)
                             {
                                 cpu->setdone(true);
-                                cpu->set_running(false);
                             }
                         }
                     }
@@ -74,11 +82,26 @@ void Scheduler::run()
             }
         }
     }
+        //TODO: Implement RR here
+        /*Insert RR code here*/
+
+        //
+        CPUticks += 1;
+        sleep(TICK_DELAY);
     }
-    //TODO: Implement RR here
 }
 
-std::vector<process>* Scheduler::getFinishedQueue() {  
+std::vector<process>* Scheduler::getFinishedQueue() const
+{
     return FinishedQueue;
 }
 
+bool Scheduler::isDelayDone() const
+{
+    return CPUticks % Delay == 0;
+}
+
+int Scheduler::getTick()
+{
+    return CPUticks;
+}

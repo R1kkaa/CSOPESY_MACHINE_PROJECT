@@ -12,15 +12,23 @@ CPUCore::CPUCore(int* CPUticks, int* Delay, int id): currProcess("init")
     this->id = id;
     this->running = false;
     this->done = false;
+    this->currTick = 0;
+    this->hasruninstruction = false;
 }
 
-void CPUCore::run()
+[[noreturn]] void CPUCore::run()
  {
     while (true)
     {
-        if (currProcess.getstatus()!=process::FINISHED)
+        if (SchedulerPtr->getTick() > currTick && SchedulerPtr->isDelayDone())
+        {
+            setruninstruction(false);
+        }
+        if (currProcess.getstatus()!=process::FINISHED && !hasruninstruction)
         {
             currProcess.runInstruction();
+            setruninstruction(true);
+            currTick=SchedulerPtr->getTick();
         }
     }
  }
@@ -60,4 +68,28 @@ bool CPUCore::getdone()
 void CPUCore::setdone(bool done)
 {
     this->done = done;
+}
+
+bool CPUCore::hasrunInstruction() const
+{
+    return hasruninstruction;
+}
+
+void CPUCore::setruninstruction(bool val)
+{
+    hasruninstruction = val;
+}
+
+void CPUCore::setScheduler(Scheduler* scheduler)
+{
+    this->SchedulerPtr = scheduler;
+}
+void CPUCore::setSenTtoFinishedVector(bool val)
+{
+    this->sentToFinishedVector = val;
+}
+
+bool CPUCore::getSentToFinishedVector()
+{
+    return sentToFinishedVector;
 }

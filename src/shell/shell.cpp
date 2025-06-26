@@ -34,7 +34,7 @@ void Shell::start(){
 
     //initialize scheduler
     //TODO: Add a pointer to the finishedprocess variable in the scheduler constructor so the scheduler can access and put finished processes in the constructor (basically modify scheduler.cpp and add the finishedprocess as a function parameter)
-    Scheduler scheduler(&Ticks, &Delay, &processes, &finishedprocesses, false, &CPUs);
+    Scheduler scheduler(Delay, &processes, &finishedprocesses, false, &CPUs);
 
     //start CPU ticks
     //TODO: Fix CPU Ticks, can be reimplmented.
@@ -43,17 +43,20 @@ void Shell::start(){
     //start scheduler and tick counts (currently CPU Ticks does not do anything)
     //scheduler is the one that starts the CPU threads, check scheduler.cpp for more information
     //TODO:Fix CPU Ticks
-    count.start();
+    //count.start();
     scheduler.start();
 
     //Main Menu, command recognition area
-    bool run = true;
     bool initialized = false;
     Util::printMenu();
-    while (run) {
+    while (true) {
         std::vector<std::string> userInput = Util::readInput();
         try {
             userInput.at(0); //anti out of range error
+            if (userInput[0] == "exit") {
+                std::cout << userInput[0] << " command recognized." << std::endl;
+                exit(0);
+            }
             if (userInput[0] != "initialize" && !initialized) {
                 std::cout << "Kindly initialize first." << std::endl;
                 system("pause");
@@ -63,10 +66,6 @@ void Shell::start(){
                 system("pause");
                 initialized = true;
                 Util::printMenu();
-            }
-            else if (userInput[0] == "exit") {
-                std::cout << userInput[0] << " command recognized." << std::endl;
-                exit(0);
             }
             else if (userInput[0] == "clear" && initialized) {
                 std::cout << userInput[0] << " command recognized." << std::endl;
@@ -92,7 +91,7 @@ void Shell::start(){
                 std::cout << "Running Processes:" << std::endl;
                 for (int i = 0; i < CPUs.size(); i++)
                 {
-                    if (CPUs.at(i).get_running()) {
+                    if (!CPUs.at(i).getdone()) {
                         std::cout << CPUs.at(i).curr_process().getname() << "   " + CPUs.at(i).curr_process().displayTimestamp() + "    Core: " + std::to_string(i) + "     " + std::to_string(CPUs.at(i).curr_process().getcurrLine()) + "/" + std::to_string(CPUs.at(i).curr_process().getmaxLine()) + "STATUS: " + std::to_string(CPUs.at(i).curr_process().getstatus())<< std::endl;
                     }
                     else

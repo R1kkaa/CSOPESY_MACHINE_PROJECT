@@ -11,6 +11,9 @@
 
 class ICommand {
 public:
+    ICommand() = default;
+    ICommand(const ICommand&) = default;
+    ICommand& operator=(const ICommand&) = default;
     virtual ~ICommand() = default;
 
     enum CommandType
@@ -20,6 +23,8 @@ public:
         DECLARE,
         ADD,
         SUBTRACT,
+        FOR,
+        SLEEP
     };
     ICommand(int pid, CommandType commandType);
     [[nodiscard]] CommandType getCommandType() const;
@@ -27,7 +32,7 @@ public:
     virtual int getsize() = 0;
 
 protected:
-    int pid;
+    int pid{};
     CommandType commandType;
 };
 
@@ -38,7 +43,6 @@ inline ICommand::CommandType ICommand::getCommandType() const
 inline void ICommand::execute()
 {
 }
-
 inline ICommand::ICommand(int pid, CommandType commandType)
 {
     this->pid = pid;
