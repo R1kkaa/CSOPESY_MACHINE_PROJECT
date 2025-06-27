@@ -14,6 +14,7 @@
 #include "DeclareCommand.h"
 #include "ForCommand.h"
 #include "PrintCommand.h"
+#include "SleepCommand.h"
 #include "SubCommand.h"
 
 generateprocess::generateprocess(int Delay, std::deque<process>* ReadyQueue, Scheduler* scheduler, std::mutex* queuemutex, int maxsize, int minsize)
@@ -26,17 +27,18 @@ generateprocess::generateprocess(int Delay, std::deque<process>* ReadyQueue, Sch
     this->maxsize = maxsize;
     this->minsize = minsize;
     currtick = 0;
-    processcount = 10;
+    processcount = 0;
 }
 
 void generateprocess::run()
 {
     while (true)
     {
-        if (createprocess && scheduler->isDelayDone() && currtick < scheduler->getTick())
+        auto schedtick = scheduler->getTick();
+        if (createprocess && schedtick % Delay == 0 && currtick < schedtick)
         {
-            currtick = scheduler->getTick();
-            process newprocess = generatedummyprocess("process_"+std::to_string(processcount), minsize, maxsize);
+            currtick = schedtick;
+            process newprocess = generatedummyprocess("process_" + std::to_string(processcount), minsize, maxsize);
             processcount++;
             const std::lock_guard<std::mutex> lock(*queuemutex);
             //debug purposes
@@ -68,45 +70,47 @@ process generateprocess::generatedummyprocess(std::string name, int minsize, int
         switch (getRandomNumber(0, 5))
         {
         case 0: //PRINT
-            {
-                commands.push(std::make_shared<PrintCommand>(newprocess.getID(), toPrint, newprocess.getPrintLogs()));
-                count++;
-                break;
-            }
+        {
+            commands.push(std::make_shared<PrintCommand>(newprocess.getID(), toPrint, newprocess.getPrintLogs()));
+            count++;
+            break;
+        }
         case 1: //DECLARE
-            {
-                commands.push(std::make_shared<DeclareCommand>(newprocess.getID(), "var"+std::to_string(declaredvars), getRandomNumber(0,65535), newprocess.getvarList()));
-                count++;
-                declaredvars++;
-                break;
-            }
+        {
+            commands.push(std::make_shared<DeclareCommand>(newprocess.getID(), "var" + std::to_string(declaredvars), getRandomNumber(0, 65535), newprocess.getvarList()));
+            count++;
+            declaredvars++;
+            break;
+        }
         case 2: //ADD
-            {
-                commands.push(std::make_shared<AddCommand>(newprocess.getID(), "var"+std::to_string(getRandomNumber(0,declaredvars)),"var"+std::to_string(getRandomNumber(0,declaredvars)),"var"+std::to_string(getRandomNumber(0,declaredvars)),newprocess.getvarList()));
-                count++;
-                break;
-            }
+        {
+            commands.push(std::make_shared<AddCommand>(newprocess.getID(), "var" + std::to_string(getRandomNumber(0, declaredvars)), "var" + std::to_string(getRandomNumber(0, declaredvars)), "var" + std::to_string(getRandomNumber(0, declaredvars)), newprocess.getvarList()));
+            count++;
+            break;
+        }
         case 3: //SUBTRACT
-            {
-                commands.push(std::make_shared<SubCommand>(newprocess.getID(), "var"+std::to_string(getRandomNumber(0,declaredvars)),"var"+std::to_string(getRandomNumber(0,declaredvars)),"var"+std::to_string(getRandomNumber(0,declaredvars)),newprocess.getvarList()));
-                count++;
-                break;
-            }
+        {
+            commands.push(std::make_shared<SubCommand>(newprocess.getID(), "var" + std::to_string(getRandomNumber(0, declaredvars)), "var" + std::to_string(getRandomNumber(0, declaredvars)), "var" + std::to_string(getRandomNumber(0, declaredvars)), newprocess.getvarList()));
+            count++;
+            break;
+        }
         case 4: //FOR LOOP
+        {
+            auto ret = generateforloop(instructionsize - count, declaredvars, name, &newprocess, 0);
+            count += std::get<0>(ret).getsize();
+            declaredvars = std::get<1>(ret);
+            for (auto var : std::get<0>(ret).getinstructions())
             {
-                auto ret = generateforloop(instructionsize-count, declaredvars, name, &newprocess, 0);
-                count += std::get<0>(ret).getsize();
-                declaredvars = std::get<1>(ret);
-                for (auto var : std::get<0>(ret).getinstructions())
-                {
-                    commands.push(var);
-                }
-                break;
+                commands.push(var);
             }
+            break;
+        }
         case 5: //SLEEP
-            {
-                break;
-            }
+        {
+            commands.push(std::make_shared<SleepCommand>(newprocess.getID(), getRandomNumber(1, 256), newprocess.getsleepcounterPtr()));
+            count++;
+            break;
+        }
         }
     }
     newprocess.setinstructions(commands, commands.size());
@@ -135,57 +139,59 @@ std::tuple<ForCommand, int> generateprocess::generateforloop(int size, int decla
     std::string toPrint = "Hello world from: " + name + "!";
     std::random_device rd;
     int count = 0;
-    int maxforloopsize = floor(size/2);
+    int maxforloopsize = floor(size / 2);
     if (maxforloopsize < 1)
     {
         maxforloopsize = 1;
     }
     int repeats = getRandomNumber(1, maxforloopsize);
-    int sizeperloop = std::floor(size/repeats);
+    int sizeperloop = std::floor(size / repeats);
 
     while (count < sizeperloop)
     {
         switch (getRandomNumber(0, 5))
         {
         case 0: //PRINT
-            {
-                commands.push_back(std::make_shared<PrintCommand>(newprocess->getID(), toPrint, newprocess->getPrintLogs()));
-                count++;
-                break;
-            }
+        {
+            commands.push_back(std::make_shared<PrintCommand>(newprocess->getID(), toPrint, newprocess->getPrintLogs()));
+            count++;
+            break;
+        }
         case 1: //DECLARE
-            {
-                commands.push_back(std::make_shared<DeclareCommand>(newprocess->getID(), "var"+std::to_string(declaredvars), getRandomNumber(0,65535), newprocess->getvarList()));
-                count++;
-                declaredvars++;
-                break;
-            }
+        {
+            commands.push_back(std::make_shared<DeclareCommand>(newprocess->getID(), "var" + std::to_string(declaredvars), getRandomNumber(0, 65535), newprocess->getvarList()));
+            count++;
+            declaredvars++;
+            break;
+        }
         case 2: //ADD
-            {
-                commands.push_back(std::make_shared<AddCommand>(newprocess->getID(), "var"+std::to_string(getRandomNumber(0,declaredvars)),"var"+std::to_string(getRandomNumber(0,declaredvars)),"var"+std::to_string(getRandomNumber(0,declaredvars)),newprocess->getvarList()));
-                count++;
-                break;
-            }
+        {
+            commands.push_back(std::make_shared<AddCommand>(newprocess->getID(), "var" + std::to_string(getRandomNumber(0, declaredvars)), "var" + std::to_string(getRandomNumber(0, declaredvars)), "var" + std::to_string(getRandomNumber(0, declaredvars)), newprocess->getvarList()));
+            count++;
+            break;
+        }
         case 3: //SUBTRACT
-            {
-                commands.push_back(std::make_shared<SubCommand>(newprocess->getID(), "var"+std::to_string(getRandomNumber(0,declaredvars)),"var"+std::to_string(getRandomNumber(0,declaredvars)),"var"+std::to_string(getRandomNumber(0,declaredvars)),newprocess->getvarList()));
-                count++;
-                break;
-            }
+        {
+            commands.push_back(std::make_shared<SubCommand>(newprocess->getID(), "var" + std::to_string(getRandomNumber(0, declaredvars)), "var" + std::to_string(getRandomNumber(0, declaredvars)), "var" + std::to_string(getRandomNumber(0, declaredvars)), newprocess->getvarList()));
+            count++;
+            break;
+        }
         case 4: //FOR LOOP
+        {
+            if (recurses < 3)
             {
-                if (recurses < 3)
-                {
-                    auto ret = generateforloop(size, declaredvars, name, newprocess, recurses+1);
-                    count += std::get<0>(ret).getsize();
-                    declaredvars = std::get<1>(ret);
-                }
-                break;
+                auto ret = generateforloop(size, declaredvars, name, newprocess, recurses + 1);
+                count += std::get<0>(ret).getsize();
+                declaredvars = std::get<1>(ret);
             }
+            break;
+        }
         case 5: //SLEEP
-            {
-                break;
-            }
+        {
+            commands.push_back(std::make_shared<SleepCommand>(newprocess->getID(), getRandomNumber(1, 256), newprocess->getsleepcounterPtr()));
+            count++;
+            break;
+        }
         }
     }
     ForCommand for_command(newprocess->getID(), commands, repeats);

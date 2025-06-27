@@ -5,7 +5,7 @@
 #include "Scheduler.h"
 
 #include <algorithm>
-int TICK_DELAY = 1000;
+int TICK_DELAY = 500;
 //TODO: fix scheduler.cpp and scheduler.h, add the finishedprocess pointer as a class attribute so we can put finishedprocesses there
 Scheduler::Scheduler(int Delay, std::deque<process>* ReadyQueue, std::vector<process>* FinishedProcess, std::vector<process>* SleepingProcess, bool isRR, std::vector<CPUCore>* CPUs, std::mutex* queuemutex)
 {
@@ -77,7 +77,7 @@ void Scheduler::run()
                     //If current process is sleeping
                     if (cpu->curr_process().getstatus() == process::SLEEPING && cpu->getdone() == false) {
                         //push the finished process to the finished processes vector
-                        if (!cpu->getSentToFinishedVector())
+                        if (!cpu->getSentToSleepingVector())
                         {
                             SleepingProcess->push_back(cpu->curr_process());
                             cpu->setSentToSleepingVector(true);
@@ -95,15 +95,14 @@ void Scheduler::run()
                             //if there are no more processes in the ready queue, set the CPU to not running
                             if (ReadyQueue->empty() && !cpu->getdone())
                             {
-                                if (cpu->curr_process().getstatus() == process::FINISHED)
+                                if (cpu->curr_process().getstatus() == process::SLEEPING)
                                 {
                                     cpu->setdone(true);
                                 }
                             }
                         }
                     }
-
-                    if (cpu->curr_process().getstatus() == process::FINISHED && cpu->getdone() == false) {
+                    else if (cpu->curr_process().getstatus() == process::FINISHED && cpu->getdone() == false) {
                         //push the finished process to the finished processes vector
                         if (!cpu->getSentToFinishedVector())
                         {
@@ -165,34 +164,6 @@ void Scheduler::run()
                         cpu->setdone(false);
                     }
 
-
-                    //If current process is sleeping
-                    if (cpu->curr_process().getstatus() == process::SLEEPING)
-                    {
-                        //push process into the sleep queue if process was not yet sent to sleeping vector
-                        if (!cpu->getSentToSleepingVector())
-                        {
-                            SleepingProcess->push_back(cpu->curr_process());
-                            //change passed to vector to true, resets back to false if set_curr_process is called
-                            cpu->setSentToSleepingVector(true);
-                        }
-                        //tell cpu that it's done
-                        cpu->setdone(true);
-                        //reset currline counter to match time quantum
-                        CPUCOUNTER = 0;
-                        //if there is process in ready queue, perform swap
-                        if (!ReadyQueue->empty())
-                        {
-                            //tell cpu that it's not done
-                            cpu->setdone(false);
-                            //set the process to the new one in the ready queue
-                            cpu->set_curr_process(ReadyQueue->front(), ReadyQueue);
-                            //pop the ready queue
-                            ReadyQueue->pop_front();
-                        }
-                    }
-
-
                     //if there are no more processes in the ready queue, set the CPU to not running
                     else if (ReadyQueue->empty() && cpu->curr_process().getstatus() == process::FINISHED)
                     {
@@ -214,8 +185,37 @@ void Scheduler::run()
                             ReadyQueue->pop_front();
                         }
                     }
+
+                    //If current process is sleeping
+                    if (cpu->curr_process().getstatus() == process::SLEEPING && cpu->getdone() == false) {
+                        //push the finished process to the finished processes vector
+                        if (!cpu->getSentToSleepingVector())
+                        {
+                            SleepingProcess->push_back(cpu->curr_process());
+                            cpu->setSentToSleepingVector(true);
+                        }
+                        if (!ReadyQueue->empty()) {
+                            const std::lock_guard<std::mutex> lock(*queuemutex);
+                            //change the process
+                            cpu->set_curr_process(ReadyQueue->front(), ReadyQueue);
+                            //reset value since has not been sent to finished vector
+                            cpu->setSentToSleepingVector(false);
+                            //remove the current process from the ready queue since it is already in the cpu
+                            ReadyQueue->pop_front();
+                        }
+                        else {
+                            //if there are no more processes in the ready queue, set the CPU to not running
+                            if (ReadyQueue->empty() && !cpu->getdone())
+                            {
+                                if (cpu->curr_process().getstatus() == process::SLEEPING)
+                                {
+                                    cpu->setdone(true);
+                                }
+                            }
+                        }
+                    }
                     //FIFO ALGO
-                    if (cpu->curr_process().getstatus() == process::FINISHED && cpu->getdone() == false) { //if process is done
+                    else if (cpu->curr_process().getstatus() == process::FINISHED && cpu->getdone() == false) { //if process is done
                         //push to Finished Process
                         if (!cpu->getSentToFinishedVector())
                         {

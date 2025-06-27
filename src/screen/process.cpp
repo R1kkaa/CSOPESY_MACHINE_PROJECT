@@ -152,7 +152,7 @@ void process::runInstruction()
             }
         }
     }
-    else if (instructions.empty())
+    else if (instructions.empty() && status != SLEEPING)
     {
         status = FINISHED;
     }
