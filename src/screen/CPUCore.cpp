@@ -5,31 +5,31 @@
 #include "CPUCore.h"
 
 #include <utility>
-CPUCore::CPUCore(int id): currProcess("init")
+CPUCore::CPUCore(int id) : currProcess("init")
 {
     this->id = id;
     this->running = false;
-    this->done = false;
+    this->done = true;
     this->currTick = 0;
     this->hasruninstruction = false;
 }
 
 [[noreturn]] void CPUCore::run()
- {
+{
     while (true)
     {
         if (SchedulerPtr->getTick() > currTick && SchedulerPtr->isDelayDone())
         {
             setruninstruction(false);
         }
-        if (currProcess.getstatus()!=process::FINISHED && !hasruninstruction)
+        if (currProcess.getstatus() != process::FINISHED && !hasruninstruction)
         {
             currProcess.runInstruction();
             setruninstruction(true);
-            currTick=SchedulerPtr->getTick();
+            currTick = SchedulerPtr->getTick();
         }
     }
- }
+}
 
 process CPUCore::curr_process() const
 {
@@ -47,7 +47,7 @@ void CPUCore::set_running(bool running)
 }
 void CPUCore::set_curr_process(process curr_process, std::deque<process>* ReadyQueue)
 {
-    if (running && currProcess.getstatus()!=process::FINISHED && currProcess.getstatus()!=process::SLEEPING)
+    if (running && currProcess.getstatus() != process::FINISHED && currProcess.getstatus() != process::SLEEPING)
     {
         currProcess.setcore(-1);
         currProcess.setstatus(process::STOPPED);
