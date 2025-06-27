@@ -5,6 +5,7 @@
 #ifndef SCHEDULER_H
 #define SCHEDULER_H
 #include <queue>
+#include <mutex>
 #include "CPUCore.h"
 #include "process.h"
 #include "Thread.h"

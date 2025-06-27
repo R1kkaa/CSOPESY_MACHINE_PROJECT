@@ -25,6 +25,7 @@ void Scheduler::run()
 {
     //TODO: add switching processes with the scheduler algorithms
     //if algo is not round robin, and ready queue still isn't empty
+    int CPUCOUNTER = 0;
     while (true)
     {
         //check sleeping processes here
@@ -37,6 +38,7 @@ void Scheduler::run()
                 if (SleepingProcess->at(i).getsleepcounter() == SleepingProcess->at(i).getsleeptime()) {  // condition
                     //debugging purposes
                     //std::cout << "Sleep is Done! for: " + SleepingProcess[i].getname() + "\n";
+                    SleepingProcess->at(i).setsleeptime(0);
                     ReadyQueue->push_back(SleepingProcess->at(i));
                     SleepingProcess->erase(SleepingProcess->begin() + i);
                 }
@@ -149,10 +151,42 @@ void Scheduler::run()
 
                 }
                 else if (cpu->get_running() == true) {
+                    if (cpu->curr_process().getcurrLine() != 0) {
+                        CPUCOUNTER = cpu->curr_process().getcurrLineCounterForRR();
+                    }
+
                     if (!ReadyQueue->empty())
                     {
                         cpu->setdone(false);
                     }
+
+
+                    //If current process is sleeping
+                    if (cpu->curr_process().getstatus() == process::SLEEPING)
+                    {
+                        //push process into the sleep queue if process was not yet sent to sleeping vector
+                        if (!cpu->getSentToSleepingVector())
+                        {
+                            SleepingProcess->push_back(cpu->curr_process());
+                            //change passed to vector to true, resets back to false if set_curr_process is called
+                            cpu->setSentToSleepingVector(true);
+                        }
+                        //tell cpu that it's done
+                        cpu->setdone(true);
+                        //reset currline counter to match time quantum
+                        CPUCOUNTER = 0;
+                        //if there is process in ready queue, perform swap
+                        if (!ReadyQueue->empty())
+                        {
+                            //tell cpu that it's not done
+                            cpu->setdone(false);
+                            //set the process to the new one in the ready queue
+                            cpu->set_curr_process(ReadyQueue->front(), ReadyQueue);
+                            //pop the ready queue
+                            ReadyQueue->pop_front();
+                        }
+                    }
+
 
                     //if there are no more processes in the ready queue, set the CPU to not running
                     else if (ReadyQueue->empty() && cpu->curr_process().getstatus() == process::FINISHED)
@@ -167,7 +201,7 @@ void Scheduler::run()
                     }
 
                     //PRE EMPTED RR ALGO
-                    if (CPUticks % TimeQuantum == 0 && cpu->getdone() == false) { //if TQ is up
+                    if (CPUCOUNTER % TimeQuantum == 0 && cpu->getdone() == false) { //if TQ is up
                         if (cpu->curr_process().getstatus() != process::FINISHED && !ReadyQueue->empty()) { //if process is NOT done
                             //set curr process on top of Ready Queue, push curr_process back to RQ
                             cpu->set_curr_process(ReadyQueue->front(), ReadyQueue);

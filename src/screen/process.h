@@ -41,6 +41,7 @@ public:
     void set_cpu_cycled(bool cpu_cycled);
     void runInstruction();
     [[nodiscard]] int getcurrLine() const;
+    [[nodiscard]] int getcurrLineCounterForRR() const;
     [[nodiscard]] int getmaxLine() const;
     int getsleepcounter();
     void setsleepcounter(int sleepcounter);
@@ -60,6 +61,7 @@ private:
     std::shared_ptr<std::stringstream> printLogs;
     bool hasCPUCycled = false; //can be removed ig
     int currLine = -1;
+    int currLineCounterForRR = -1;
     int maxLine = 0;
     std::shared_ptr<int> sleepcounter;
     int sleeptime = 0;

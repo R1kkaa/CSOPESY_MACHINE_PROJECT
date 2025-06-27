@@ -32,6 +32,7 @@ void process::setname(std::string name)
 void process::setinstructions(std::queue<std::shared_ptr<ICommand>> instructions, const int size)
 {
     currLine += 1;
+    currLineCounterForRR += 1;
     this->maxLine = size;
     this->instructions=std::move(instructions);
 }
@@ -127,6 +128,7 @@ void process::runInstruction()
             printLogs->str("");
             printLogs->clear();
             currLine += 1;
+            currLineCounterForRR += 1;
             if (instructions.empty())
             {
                 status = FINISHED;
@@ -142,6 +144,7 @@ void process::runInstruction()
             }
             instructions.pop();
             currLine += 1;
+            currLineCounterForRR += 1;
             if (instructions.empty() && status != SLEEPING)
             {
                 status = FINISHED;
@@ -158,6 +161,11 @@ void process::runInstruction()
 int process::getcurrLine() const
 {
     return this->currLine;
+}
+
+int process::getcurrLineCounterForRR() const
+{
+    return this->currLineCounterForRR;
 }
 
 int process::getmaxLine() const

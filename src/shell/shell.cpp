@@ -8,20 +8,20 @@
 #include <iterator>
 #include <memory>
 #include <random>
+#include <mutex>
 
 #include "../screen/generateprocess.h"
 #include "../screen/CPUCore.h"
 #include "../screen/PrintCommand.h"
-#include "../screen/Scheduler.h"
 #include "../screen/SleepCommand.h"
+#include "../screen/Scheduler.h"
 
 //TODO: Read config file first and implement "initialize command" (We can do this last)
 int isRR = false;
-const int minLines = 4;
+const int minLines = 5;
 const int maxLines = 20;
 
 void Shell::start(){
-
 
     std::deque<process> processes;
     std::vector<CPUCore> CPUs;
@@ -29,7 +29,6 @@ void Shell::start(){
     //TODO: Implement the scheduler and put the finished processes in this vector
     std::vector<process> finishedprocesses;
     std::vector<process> sleepingprocesses;
-
     std::mutex deque_mutex;
     int Delay = 0;
 
@@ -86,44 +85,88 @@ void Shell::start(){
                 std::cout << userInput[0] << " command recognized." << std::endl;
                 generateprocess.setcreateprocess(false);
             }
-            else if (initialized && userInput[0] == "screen" && (userInput[1] == "-r" || userInput[1] == "-s"))
+
+            //return to the existing screen
+            else if (initialized && userInput[0] == "screen" && userInput[1] == "-r")
             {
-                Util::clearScreen();
                 //findsession either returns an existing process or creates a new process, openscreen opens the said process
-                openscreen(findsession(CPUs, processes, userInput[2]));
+                process* foundProcess = findsession(CPUs, processes, userInput[2]);
+                if(foundProcess == nullptr) { //if no existin process, return not found
+                    Util::printMenu();
+                    std::cout << "Process <" + userInput[2] + "> not found." << std::endl;
+                    system("pause");
+				}
+                else {
+                    Util::clearScreen();
+                    openscreen(foundProcess);
+                }
+            }
+            else if (initialized && userInput[0] == "screen" && userInput[1] == "-s") {
+                process* foundProcess = findsession(CPUs, processes, userInput[2]);
+                if (foundProcess == nullptr) { //if no existing process, make one
+                    Util::clearScreen();
+                    process newprocess = generatedummyprocess(userInput[2]);
+                    processes.push_back(newprocess);
+                    openscreen(&processes.back());
+                }
+                else {
+                    Util::printMenu();
+                    std::cout << "Process <" + userInput[2] + "> exists." << std::endl;
+                    system("pause");
+                }
             }
 
             //TODO: Add finished process here
             else if (userInput[0] == "screen" && userInput[1] == "-ls" && initialized) {
-                Util::printMenu();
-                std::cout << "-----------------------------------" << std::endl;
-                std::cout << "Running Processes:" << std::endl;
-                for (int i = 0; i < CPUs.size(); i++)
-                {
-                    if (!CPUs.at(i).getdone()) {
-                        std::cout << CPUs.at(i).curr_process().getname() << "   " + CPUs.at(i).curr_process().displayTimestamp() + "    Core: " + std::to_string(i) + "     " + std::to_string(CPUs.at(i).curr_process().getcurrLine()) + "/" + std::to_string(CPUs.at(i).curr_process().getmaxLine())<< std::endl;
-                    }
-                    else
+                bool run = true;
+                while (run){
+                    Util::printMenu();
+                    std::cout << "-----------------------------------" << std::endl;
+                    std::cout << "Running Processes:" << std::endl;
+                    for (int i = 0; i < CPUs.size(); i++)
                     {
-                        std::cout <<  "Core: " + std::to_string(i) + "     Status: Idle" << std::endl;
+                        if (!CPUs.at(i).getdone()) {
+                            std::cout << CPUs.at(i).curr_process().getname() << "   " + CPUs.at(i).curr_process().displayTimestamp() + "    Core: " + std::to_string(i) + "     " + std::to_string(CPUs.at(i).curr_process().getcurrLine()) + "/" + std::to_string(CPUs.at(i).curr_process().getmaxLine()) << std::endl;
+                        }
+                        else
+                        {
+                            std::cout << "Core: " + std::to_string(i) + "     Status: Idle" << std::endl;
+                        }
                     }
-                }
 
-                std::cout << "\nReady Processes:" << std::endl;
-                std::cout << "----------------------------------" << std::endl;
-                for (const auto& process : processes) {
-                    std::cout << process.getname() << "   " + process.displayTimestamp() + "    STATUS: READY     " + std::to_string(process.getcurrLine()) + "/" + std::to_string(process.getmaxLine()) << std::endl;
-                }
-                std::cout << "\nSleeping Processes:" << std::endl;
-                std::cout << "----------------------------------" << std::endl;
-                for (const auto& process : sleepingprocesses) {
-                    std::cout << process.getname() << "   " + process.displayTimestamp() + "    STATUS: SLEEPING     " + std::to_string(process.getcurrLine()) + "/" + std::to_string(process.getmaxLine()) << std::endl;
-                }
+                    std::cout << "\nReady Processes:" << std::endl;
+                    std::cout << "----------------------------------" << std::endl;
+                    for (const auto& process : processes) {
+                        std::cout << process.getname() << "   " + process.displayTimestamp() + "    STATUS: READY     " + std::to_string(process.getcurrLine()) + "/" + std::to_string(process.getmaxLine()) << std::endl;
+                    }
 
-                std::cout << "\nFinished Processes:" << std::endl;
-                std::cout << "----------------------------------" << std::endl;
-                for(const auto& process:finishedprocesses) {
-                    std::cout << process.getname() << "   " + process.displayTimestamp() + "    STATUS: FINISHED     " + std::to_string(process.getcurrLine()) + "/" + std::to_string(process.getmaxLine()) << std::endl;
+                    std::cout << "\nSleeping Processes:" << std::endl;
+                    std::cout << "----------------------------------" << std::endl;
+                    for (const auto& process : sleepingprocesses) {
+                        std::cout << process.getname() << "   " + process.displayTimestamp() + "    STATUS: SLEEPING     " + std::to_string(process.getcurrLine()) + "/" + std::to_string(process.getmaxLine()) << std::endl;
+                    }
+
+                    std::cout << "\nFinished Processes:" << std::endl;
+                    std::cout << "----------------------------------" << std::endl;
+                    for (const auto& process : finishedprocesses) {
+                        std::cout << process.getname() << "   " + process.displayTimestamp() + "    STATUS: FINISHED     " + std::to_string(process.getcurrLine()) + "/" + std::to_string(process.getmaxLine()) << std::endl;
+                    }
+                    try {
+                        std::vector<std::string> userInput = Util::readInput();
+                        userInput.at(0);
+                        if (userInput[0] == "exit") {
+                            Util::clearScreen();
+                            Util::printMenu();
+                            run = false;
+                        }
+                        else if (userInput[0] != "screen" || userInput[1] != "-ls") {
+                            std::cout << "Command not found\n";
+                            system("pause");
+                        }
+                    }
+                    catch (const std::out_of_range& e) {
+                        //catch out of bounds
+                    }
                 }
             }
 
@@ -170,9 +213,7 @@ process* Shell::findsession(std::vector<CPUCore>& CPUs, std::deque<process>& pro
     if (it2 != processes.end()) {
         return &*it2;  // Return pointer to the found Screen
     }
-    process newprocess = generatedummyprocess(name);
-    processes.push_back(newprocess);
-    return &processes.back();
+    return nullptr;
 }
 
 //Opens the process passed
@@ -183,20 +224,26 @@ void Shell::openscreen(process* screen)
     {
         std::cout << "Name: " << screen->getname() << "\nID: " << screen->getID() << "\nScreen created at: " << screen->displayTimestamp() << std::endl;
         std::vector<std::string> userInput = Util::readInput();
-        if (userInput[0] == "exit")
-        {
-            run = false;
-            Util::printMenu();
-        }
-        if (userInput[0] == "process-smi")
-        {
-            std::cout << "Logs: \n\n";
-            auto logs = screen->getFormattedLogs();
-            for (auto i : logs)
+        userInput.at(0); //anti out of range error
+        try {
+            if (userInput[0] == "exit")
             {
-                std::cout << i << std::endl;
+                run = false;
+                Util::printMenu();
             }
-            std::cout << "\n\n";
+            if (userInput[0] == "process-smi")
+            {
+                std::cout << "Logs: \n\n";
+                auto logs = screen->getFormattedLogs();
+                for (auto i : logs)
+                {
+                    std::cout << i << std::endl;
+                }
+                std::cout << "\n\n";
+            }
+        }
+        catch (const std::out_of_range& e) {
+            //catch out of bounds
         }
     }
 }
@@ -213,8 +260,8 @@ process Shell::generatedummyprocess(std::string name)
     std::uniform_int_distribution<> distrib(minLines, maxLines);
     for (int i = 0; i < distrib(gen); i++)
     {
-        //commands.push(std::make_shared<PrintCommand>(newprocess.getID(), toPrint, newprocess.getPrintLogs()));
-        commands.push(std::make_shared<SleepCommand>(newprocess.getID(), 10, newprocess.getsleepcounterPtr()));
+        commands.push(std::make_shared<PrintCommand>(newprocess.getID(), toPrint, newprocess.getPrintLogs()));
+        commands.push(std::make_shared<SleepCommand>(newprocess.getID(), 5, newprocess.getsleepcounterPtr()));
     }
     newprocess.setinstructions(commands, commands.size());
     return newprocess;
