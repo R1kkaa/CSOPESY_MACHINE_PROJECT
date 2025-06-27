@@ -19,11 +19,13 @@ class Scheduler: public Thread{
     int Delay;
     bool isRR = false;
     std::mutex* queuemutex;
+    std::vector<process>* SleepingProcess;
 
     public:
-    Scheduler(int Delay, std::deque<process>* ReadyQueue, std::vector<process>* FinishedProcess, bool isRR, std::vector<CPUCore>* CPUs, std::mutex* queuemutex);
     bool isDelayDone() const;
     int getTick();
+    Scheduler(int Delay, std::deque<process>* ReadyQueue, std::vector<process>* FinishedProcess,
+              std::vector<process>* SleepingProcess, bool isRR, std::vector<CPUCore>* CPUs, std::mutex* queuemutex);
     void run() override;
 };
 

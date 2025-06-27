@@ -19,7 +19,8 @@ public:
     {
         RUNNING,
         STOPPED,
-        FINISHED
+        FINISHED,
+        SLEEPING,
     };
     // Constructor
     explicit process(std::string name);
@@ -41,6 +42,12 @@ public:
     void runInstruction();
     [[nodiscard]] int getcurrLine() const;
     [[nodiscard]] int getmaxLine() const;
+    int getsleepcounter();
+    void setsleepcounter(int sleepcounter);
+    std::shared_ptr<int> getsleepcounterPtr();
+    int getsleeptime();
+    void setsleeptime(int sleeptime);
+
 
 private:
     std::string name;
@@ -54,6 +61,8 @@ private:
     bool hasCPUCycled = false; //can be removed ig
     int currLine = -1;
     int maxLine = 0;
+    std::shared_ptr<int> sleepcounter;
+    int sleeptime = 0;
     std::shared_ptr<std::unordered_map<std::string, uint16_t>> varList;
 
 

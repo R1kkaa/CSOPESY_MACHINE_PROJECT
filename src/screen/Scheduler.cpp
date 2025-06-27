@@ -7,7 +7,7 @@
 #include <algorithm>
 int TICK_DELAY = 1000;
 //TODO: fix scheduler.cpp and scheduler.h, add the finishedprocess pointer as a class attribute so we can put finishedprocesses there
-Scheduler::Scheduler(int Delay, std::deque<process>* ReadyQueue, std::vector<process>* FinishedProcess, bool isRR, std::vector<CPUCore>* CPUs, std::mutex* queuemutex)
+Scheduler::Scheduler(int Delay, std::deque<process>* ReadyQueue, std::vector<process>* FinishedProcess, std::vector<process>* SleepingProcess, bool isRR, std::vector<CPUCore>* CPUs, std::mutex* queuemutex)
 {
 	this->FinishedProcess = FinishedProcess;
     this->ReadyQueue = ReadyQueue;
@@ -16,7 +16,7 @@ Scheduler::Scheduler(int Delay, std::deque<process>* ReadyQueue, std::vector<pro
     this->CPUticks = 0;
     this->Delay = Delay + 1;
     this->queuemutex = queuemutex;
-
+    this->SleepingProcess = SleepingProcess;
 }
 
 
@@ -28,6 +28,21 @@ void Scheduler::run()
     while (true)
     {
         //check sleeping processes here
+        if (!SleepingProcess->empty())
+        {
+            //debugging purposes
+            //std::cout << "Curr Cpu Tick: " + std::to_string(CPUticks) + "\n";
+            for (int i = SleepingProcess->size() - 1; i >= 0; i--) {
+                SleepingProcess->at(i).setsleeptime(SleepingProcess->at(i).getsleeptime() + 1);
+                if (SleepingProcess->at(i).getsleepcounter() == SleepingProcess->at(i).getsleeptime()) {  // condition
+                    //debugging purposes
+                    //std::cout << "Sleep is Done! for: " + SleepingProcess[i].getname() + "\n";
+                    ReadyQueue->push_back(SleepingProcess->at(i));
+                    SleepingProcess->erase(SleepingProcess->begin() + i);
+                }
+            }
+        }
+
         if (!isRR)
         {
             for (int i = 0; i < CPUs->size(); i++)
@@ -55,6 +70,32 @@ void Scheduler::run()
                     {
                         cpu->setdone(false);
                     }
+                    //TODO: Implement this sleep logic in RR
+
+                    //If current process is sleeping
+                    if (cpu->curr_process().getstatus() == process::SLEEPING)
+                    {
+                        //push process into the sleep queue if process was not yet sent to sleeping vector
+                        if (!cpu->getSentToSleepingVector())
+                        {
+                            SleepingProcess->push_back(cpu->curr_process());
+                            //change passed to vector to true, resets back to false if set_curr_process is called
+                            cpu->setSentToSleepingVector(true);
+                        }
+                        //tell cpu that it's done
+                        cpu->setdone(true);
+                        //if there is process in ready queue, perform swap
+                        if (!ReadyQueue->empty())
+                        {
+                            //tell cpu that it's not done
+                            cpu->setdone(false);
+                            //set the process to the new one in the ready queue
+                            cpu->set_curr_process(ReadyQueue->front(), ReadyQueue);
+                            //pop the ready queue
+                            ReadyQueue->pop_front();
+                        }
+                    }
+
                     if (cpu->curr_process().getstatus() == process::FINISHED && cpu->getdone() == false) {
                         //push the finished process to the finished processes vector
                         if (!cpu->getSentToFinishedVector())
@@ -112,6 +153,7 @@ void Scheduler::run()
                     {
                         cpu->setdone(false);
                     }
+
                     //if there are no more processes in the ready queue, set the CPU to not running
                     else if (ReadyQueue->empty() && cpu->curr_process().getstatus() == process::FINISHED)
                     {

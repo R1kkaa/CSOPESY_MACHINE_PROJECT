@@ -47,12 +47,13 @@ void CPUCore::set_running(bool running)
 }
 void CPUCore::set_curr_process(process curr_process, std::deque<process>* ReadyQueue)
 {
-    if (running && currProcess.getstatus()!=process::FINISHED)
+    if (running && currProcess.getstatus()!=process::FINISHED && currProcess.getstatus()!=process::SLEEPING)
     {
         currProcess.setcore(-1);
         currProcess.setstatus(process::STOPPED);
         ReadyQueue->push_back(currProcess);
     }
+    setSentToSleepingVector(false);
     currProcess = std::move(curr_process);
     currProcess.setstatus(process::RUNNING);
     currProcess.setcore(this->id);
@@ -90,4 +91,13 @@ void CPUCore::setSenTtoFinishedVector(bool val)
 bool CPUCore::getSentToFinishedVector()
 {
     return sentToFinishedVector;
+}
+
+void CPUCore::setSentToSleepingVector(bool val)
+{
+    this->sentToSleepingVector = val;
+}
+bool CPUCore::getSentToSleepingVector()
+{
+    return sentToSleepingVector;
 }

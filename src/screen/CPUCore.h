@@ -21,6 +21,7 @@ public:
     bool hasruninstruction;
     Scheduler* SchedulerPtr;
     bool sentToFinishedVector = false;
+    bool sentToSleepingVector = false;
 
     CPUCore(int id);
     [[noreturn]] void run() override;
@@ -35,6 +36,8 @@ public:
     void setScheduler(Scheduler* scheduler);
     void setSenTtoFinishedVector(bool val);
     bool getSentToFinishedVector();
+    void setSentToSleepingVector(bool val);
+    bool getSentToSleepingVector();
 };
 
 

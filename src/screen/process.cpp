@@ -12,7 +12,7 @@
 
 #include "PrintCommand.h"
 
-process::process(std::string name) : printLogs(std::make_shared<std::stringstream>()), varList(std::make_shared<std::unordered_map<std::string, uint16_t>>())
+process::process(std::string name) : printLogs(std::make_shared<std::stringstream>()), sleepcounter(std::make_shared<int>(0)), varList(std::make_shared<std::unordered_map<std::string, uint16_t>>())
 {
     this->name = std::move(name);
     id=++counter;
@@ -102,7 +102,7 @@ void process::set_cpu_cycled(bool cpu_cycled)
 void process::runInstruction()
 {
     // if there are still instructions
-    if (!instructions.empty())
+    if (!instructions.empty() && status != SLEEPING)
     {
         // if current command is PRINT
         if (instructions.front()->getCommandType() == ICommand::PRINT)
@@ -136,14 +136,22 @@ void process::runInstruction()
         }else
         {
             instructions.front()->execute();
+            if (instructions.front()->getCommandType() == ICommand::SLEEP)
+            {
+                status = SLEEPING;
+            }
             instructions.pop();
             currLine += 1;
-            if (instructions.empty())
+            if (instructions.empty() && status != SLEEPING)
             {
                 status = FINISHED;
                 formattedLogs.emplace_back("Finished!");
             }
         }
+    }
+    else if (instructions.empty())
+    {
+        status = FINISHED;
     }
 }
 
@@ -155,4 +163,28 @@ int process::getcurrLine() const
 int process::getmaxLine() const
 {
     return this->maxLine;
+}
+
+int process::getsleeptime()
+{
+    return sleeptime;
+}
+
+int process::getsleepcounter()
+{
+    return *sleepcounter;
+}
+void process::setsleeptime(int sleeptime)
+{
+    this->sleeptime=sleeptime;
+}
+
+void process::setsleepcounter(int sleepcounter)
+{
+    *this->sleepcounter = sleepcounter;
+}
+
+std::shared_ptr<int> process::getsleepcounterPtr()
+{
+    return sleepcounter;
 }

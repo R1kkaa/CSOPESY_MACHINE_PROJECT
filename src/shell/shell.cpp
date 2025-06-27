@@ -13,6 +13,7 @@
 #include "../screen/CPUCore.h"
 #include "../screen/PrintCommand.h"
 #include "../screen/Scheduler.h"
+#include "../screen/SleepCommand.h"
 
 //TODO: Read config file first and implement "initialize command" (We can do this last)
 int isRR = false;
@@ -27,6 +28,8 @@ void Shell::start(){
     //Vector to put in finished processes
     //TODO: Implement the scheduler and put the finished processes in this vector
     std::vector<process> finishedprocesses;
+    std::vector<process> sleepingprocesses;
+
     std::mutex deque_mutex;
     int Delay = 0;
 
@@ -38,7 +41,7 @@ void Shell::start(){
 
     //initialize scheduler
     //TODO: Add a pointer to the finishedprocess variable in the scheduler constructor so the scheduler can access and put finished processes in the constructor (basically modify scheduler.cpp and add the finishedprocess as a function parameter)
-    Scheduler scheduler(Delay, &processes, &finishedprocesses, isRR, &CPUs, &deque_mutex);
+    Scheduler scheduler(Delay, &processes, &finishedprocesses, &sleepingprocesses, isRR, &CPUs, &deque_mutex);
 
     //start CPU ticks
     //TODO: Fix CPU Ticks, can be reimplmented.
@@ -110,6 +113,11 @@ void Shell::start(){
                 std::cout << "----------------------------------" << std::endl;
                 for (const auto& process : processes) {
                     std::cout << process.getname() << "   " + process.displayTimestamp() + "    STATUS: READY     " + std::to_string(process.getcurrLine()) + "/" + std::to_string(process.getmaxLine()) << std::endl;
+                }
+                std::cout << "\nSleeping Processes:" << std::endl;
+                std::cout << "----------------------------------" << std::endl;
+                for (const auto& process : sleepingprocesses) {
+                    std::cout << process.getname() << "   " + process.displayTimestamp() + "    STATUS: SLEEPING     " + std::to_string(process.getcurrLine()) + "/" + std::to_string(process.getmaxLine()) << std::endl;
                 }
 
                 std::cout << "\nFinished Processes:" << std::endl;
@@ -205,7 +213,8 @@ process Shell::generatedummyprocess(std::string name)
     std::uniform_int_distribution<> distrib(minLines, maxLines);
     for (int i = 0; i < distrib(gen); i++)
     {
-        commands.push(std::make_shared<PrintCommand>(newprocess.getID(), toPrint, newprocess.getPrintLogs()));
+        //commands.push(std::make_shared<PrintCommand>(newprocess.getID(), toPrint, newprocess.getPrintLogs()));
+        commands.push(std::make_shared<SleepCommand>(newprocess.getID(), 10, newprocess.getsleepcounterPtr()));
     }
     newprocess.setinstructions(commands, commands.size());
     return newprocess;
