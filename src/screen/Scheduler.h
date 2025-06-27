@@ -13,15 +13,14 @@ class CPUCore;
 
 class Scheduler: public Thread{
     std::deque<process>* ReadyQueue;
-	std::vector<process>* FinishedQueue;
+	std::vector<process>* FinishedProcess;
     std::vector<CPUCore>* CPUs;
     int CPUticks;
     int Delay;
     bool isRR = false;
 
     public:
-    Scheduler(int Delay, std::deque<process>* ReadyQueue, std::vector<process>* FinishedQueue, bool isRR, std::vector<CPUCore>* CPUs);
-    std::vector<process>* getFinishedQueue() const;
+    Scheduler(int Delay, std::deque<process>* ReadyQueue, std::vector<process>* FinishedProcess, bool isRR, std::vector<CPUCore>* CPUs);
     bool isDelayDone() const;
     int getTick();
     void run() override;
