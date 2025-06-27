@@ -14,6 +14,7 @@
 #include "DeclareCommand.h"
 #include "ForCommand.h"
 #include "PrintCommand.h"
+#include "SleepCommand.h"
 #include "SubCommand.h"
 
 generateprocess::generateprocess(int Delay, std::deque<process>* ReadyQueue, Scheduler* scheduler, std::mutex* queuemutex, int maxsize, int minsize)
@@ -26,16 +27,17 @@ generateprocess::generateprocess(int Delay, std::deque<process>* ReadyQueue, Sch
     this->maxsize = maxsize;
     this->minsize = minsize;
     currtick = 0;
-    processcount = 10;
+    processcount = 0;
 }
 
 void generateprocess::run()
 {
     while (true)
     {
-        if (createprocess && scheduler->isDelayDone() && currtick < scheduler->getTick())
+        auto schedtick = scheduler->getTick();
+        if (createprocess && schedtick%Delay==0 && currtick < schedtick)
         {
-            currtick = scheduler->getTick();
+            currtick = schedtick;
             process newprocess = generatedummyprocess("process_"+std::to_string(processcount), minsize, maxsize);
             processcount++;
             const std::lock_guard<std::mutex> lock(*queuemutex);
@@ -105,6 +107,8 @@ process generateprocess::generatedummyprocess(std::string name, int minsize, int
             }
         case 5: //SLEEP
             {
+                commands.push(std::make_shared<SleepCommand>(newprocess.getID(), getRandomNumber(1,256), newprocess.getsleepcounterPtr()));
+                count++;
                 break;
             }
         }
@@ -184,6 +188,8 @@ std::tuple<ForCommand, int> generateprocess::generateforloop(int size, int decla
             }
         case 5: //SLEEP
             {
+                commands.push_back(std::make_shared<SleepCommand>(newprocess->getID(), getRandomNumber(1,256), newprocess->getsleepcounterPtr()));
+                count++;
                 break;
             }
         }

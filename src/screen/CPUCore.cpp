@@ -9,7 +9,7 @@ CPUCore::CPUCore(int id): currProcess("init")
 {
     this->id = id;
     this->running = false;
-    this->done = false;
+    this->done = true;
     this->currTick = 0;
     this->hasruninstruction = false;
 }
