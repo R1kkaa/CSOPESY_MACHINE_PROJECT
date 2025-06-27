@@ -4,6 +4,8 @@
 #include "../screen/CPUCore.h"
 #include "../screen/process.h"
 
+class ForCommand;
+
 class Shell {
     public:          // Access specifier
         Shell() = default;
@@ -13,7 +15,7 @@ class Shell {
     static void openscreen(process* screen);
     static process generatedummyprocess(std::string name);
     static std::deque<process> generatedummyprocesses(int count);
-    static std::vector<CPUCore> generateCPUs(int num, int* Ticks, int* Delay);
+    static std::vector<CPUCore> generateCPUs(int num);
 };
 
 #endif //SHELL_H

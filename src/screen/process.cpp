@@ -111,7 +111,7 @@ void process::runInstruction()
             std::string append = "(" + executionTime() + ") " + "Core:" + std::to_string(this->core) + " " + printLogs->str();
             instructions.pop();
             formattedLogs.push_back(append);
-
+            /*
             std::string filename = this->getname() + ".txt";
             std::ofstream logFile(filename, std::ios::app); // open in append mode
             if (logFile.is_open())
@@ -123,13 +123,25 @@ void process::runInstruction()
             {
                 std::cerr << "Error: could not open log file for " << this->getname() << std::endl;
             }
+            */
             printLogs->str("");
             printLogs->clear();
-
             currLine += 1;
             if (instructions.empty())
             {
                 status = FINISHED;
+                formattedLogs.emplace_back("Finished!");
+
+            }
+        }else
+        {
+            instructions.front()->execute();
+            instructions.pop();
+            currLine += 1;
+            if (instructions.empty())
+            {
+                status = FINISHED;
+                formattedLogs.emplace_back("Finished!");
             }
         }
     }

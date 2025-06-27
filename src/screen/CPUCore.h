@@ -22,7 +22,7 @@ public:
     Scheduler* SchedulerPtr;
     bool sentToFinishedVector = false;
 
-    CPUCore(int* CPUticks,int* Delay, int id);
+    CPUCore(int id);
     [[noreturn]] void run() override;
     [[nodiscard]] process curr_process() const;
     bool get_running();

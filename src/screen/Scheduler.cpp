@@ -7,7 +7,7 @@
 #include <algorithm>
 int TICK_DELAY = 1000;
 //TODO: fix scheduler.cpp and scheduler.h, add the finishedprocess pointer as a class attribute so we can put finishedprocesses there
-Scheduler::Scheduler(int Delay, std::deque<process>* ReadyQueue, std::vector<process>* FinishedProcess, bool isRR, std::vector<CPUCore>* CPUs)
+Scheduler::Scheduler(int Delay, std::deque<process>* ReadyQueue, std::vector<process>* FinishedProcess, bool isRR, std::vector<CPUCore>* CPUs, std::mutex* queuemutex)
 {
 	this->FinishedProcess = FinishedProcess;
     this->ReadyQueue = ReadyQueue;
@@ -15,6 +15,7 @@ Scheduler::Scheduler(int Delay, std::deque<process>* ReadyQueue, std::vector<pro
     this->CPUs = CPUs;
     this->CPUticks = 0;
     this->Delay = Delay + 1;
+    this->queuemutex = queuemutex;
 
 }
 
@@ -36,6 +37,7 @@ void Scheduler::run()
                 //if cpu is not yet running (has not been started yet)
                 if (cpu->get_running() == false && !ReadyQueue->empty())
                 {
+                    const std::lock_guard<std::mutex> lock(*queuemutex);
                     cpu->setScheduler(this);
                     //set the current process of the cpu to the front of the ready queue, also puts back the process that was in the CPU back to the ReadyQueue
                     cpu->set_curr_process(ReadyQueue->front(), ReadyQueue);
@@ -61,6 +63,7 @@ void Scheduler::run()
                             cpu->setSenTtoFinishedVector(true);
                         }
                         if (!ReadyQueue->empty()) {
+                            const std::lock_guard<std::mutex> lock(*queuemutex);
                             //change the process
                             cpu->set_curr_process(ReadyQueue->front(), ReadyQueue);
                             //reset value since has not been sent to finished vector

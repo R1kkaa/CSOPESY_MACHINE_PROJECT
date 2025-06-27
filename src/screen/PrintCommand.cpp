@@ -13,8 +13,14 @@ void PrintCommand::execute()
     {
         logs->str(std::string());
         logs->clear();
-        auto found = varList->find(var);
-        logs->str(toPrint+ std::to_string(found->second));
+        const auto found = varList->find(var);
+        if (found != varList->end())
+        {
+            *logs << toPrint + std::to_string(found->second);
+        }else
+        {
+            *logs << toPrint + std::to_string(0);
+        }
     }
     //a variable was passed
     else

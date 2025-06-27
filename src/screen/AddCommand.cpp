@@ -5,7 +5,6 @@
 #include "AddCommand.h"
 void AddCommand::execute()
 {
-    int result;
     int var1;
     int var2;
 
@@ -30,7 +29,7 @@ void AddCommand::execute()
         var2 = 0;
         varList->insert({this->var2,var2});
     }
-    result = var1 + var2;
+    int result = var1 + var2;
     if (result > UINT16_MAX_VAL)
     {
         result = UINT16_MAX_VAL;

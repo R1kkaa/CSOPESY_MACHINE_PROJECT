@@ -9,13 +9,13 @@
 #include <memory>
 #include <random>
 
-#include "../screen/CPUticks.h"
+#include "../screen/generateprocess.h"
 #include "../screen/CPUCore.h"
 #include "../screen/PrintCommand.h"
 #include "../screen/Scheduler.h"
 
 //TODO: Read config file first and implement "initialize command" (We can do this last)
-int isRR = true;
+int isRR = false;
 const int minLines = 4;
 const int maxLines = 20;
 
@@ -27,28 +27,28 @@ void Shell::start(){
     //Vector to put in finished processes
     //TODO: Implement the scheduler and put the finished processes in this vector
     std::vector<process> finishedprocesses;
-    int Ticks = 0;
+    std::mutex deque_mutex;
     int Delay = 0;
 
     //generate a number of dummy processes with 100 print instructions(count is the number of processes created)
     processes = generatedummyprocesses(10);
 
     //generate CPUs
-    CPUs = generateCPUs(4, &Ticks, &Delay);
+    CPUs = generateCPUs(4);
 
     //initialize scheduler
     //TODO: Add a pointer to the finishedprocess variable in the scheduler constructor so the scheduler can access and put finished processes in the constructor (basically modify scheduler.cpp and add the finishedprocess as a function parameter)
-    Scheduler scheduler(Delay, &processes, &finishedprocesses, isRR, &CPUs);
+    Scheduler scheduler(Delay, &processes, &finishedprocesses, isRR, &CPUs, &deque_mutex);
 
     //start CPU ticks
     //TODO: Fix CPU Ticks, can be reimplmented.
-    CPUticks count(&Ticks, &Delay);
+    generateprocess generateprocess(Delay, &processes, &scheduler, &deque_mutex, maxLines, minLines);
 
     //start scheduler and tick counts (currently CPU Ticks does not do anything)
     //scheduler is the one that starts the CPU threads, check scheduler.cpp for more information
     //TODO:Fix CPU Ticks
-    //count.start();
     scheduler.start();
+    generateprocess.start();
 
     //Main Menu, command recognition area
     bool initialized = false;
@@ -77,9 +77,11 @@ void Shell::start(){
             }
             else if (userInput[0] == "scheduler-start" && initialized) {
                 std::cout << userInput[0] << " command recognized." << std::endl;
+                generateprocess.setcreateprocess(true);
             }
             else if (userInput[0] == "scheduler-stop" && initialized) {
                 std::cout << userInput[0] << " command recognized." << std::endl;
+                generateprocess.setcreateprocess(false);
             }
             else if (initialized && userInput[0] == "screen" && (userInput[1] == "-r" || userInput[1] == "-s"))
             {
@@ -192,6 +194,7 @@ void Shell::openscreen(process* screen)
 }
 
 //WEEK 6: generates a print process
+
 process Shell::generatedummyprocess(std::string name)
 {
     process newprocess(name);
@@ -220,12 +223,12 @@ std::deque<process> Shell::generatedummyprocesses(int count)
 }
 
 //Generate CPU, returns a CPU Vector
-std::vector<CPUCore> Shell::generateCPUs(int num, int* Ticks, int* Delay)
+std::vector<CPUCore> Shell::generateCPUs(int num)
 {
     std::vector<CPUCore> CPUs;
     for (int i = 0; i < num; i++)
     {
-        CPUs.push_back(CPUCore(Ticks, Delay, i));
+        CPUs.push_back(CPUCore(i));
     }
     return CPUs;
 }

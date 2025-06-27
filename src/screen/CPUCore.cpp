@@ -5,10 +5,8 @@
 #include "CPUCore.h"
 
 #include <utility>
-CPUCore::CPUCore(int* CPUticks, int* Delay, int id): currProcess("init")
+CPUCore::CPUCore(int id): currProcess("init")
 {
-    this->CPUticks = CPUticks;
-    this->Delay = Delay;
     this->id = id;
     this->running = false;
     this->done = false;
