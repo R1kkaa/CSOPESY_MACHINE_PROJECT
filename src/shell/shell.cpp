@@ -7,16 +7,20 @@
 #include <queue>
 #include <iterator>
 #include <memory>
+#include <random>
 
 #include "../screen/CPUticks.h"
 #include "../screen/CPUCore.h"
 #include "../screen/PrintCommand.h"
 #include "../screen/Scheduler.h"
 
+//TODO: Read config file first and implement "initialize command" (We can do this last)
+int isRR = true;
+const int minLines = 4;
+const int maxLines = 20;
 
 void Shell::start(){
 
-    //TODO: Read config file first and implement "initialize command" (We can do this last)
 
     std::deque<process> processes;
     std::vector<CPUCore> CPUs;
@@ -34,7 +38,7 @@ void Shell::start(){
 
     //initialize scheduler
     //TODO: Add a pointer to the finishedprocess variable in the scheduler constructor so the scheduler can access and put finished processes in the constructor (basically modify scheduler.cpp and add the finishedprocess as a function parameter)
-    Scheduler scheduler(Delay, &processes, &finishedprocesses, false, &CPUs);
+    Scheduler scheduler(Delay, &processes, &finishedprocesses, isRR, &CPUs);
 
     //start CPU ticks
     //TODO: Fix CPU Ticks, can be reimplmented.
@@ -92,13 +96,20 @@ void Shell::start(){
                 for (int i = 0; i < CPUs.size(); i++)
                 {
                     if (!CPUs.at(i).getdone()) {
-                        std::cout << CPUs.at(i).curr_process().getname() << "   " + CPUs.at(i).curr_process().displayTimestamp() + "    Core: " + std::to_string(i) + "     " + std::to_string(CPUs.at(i).curr_process().getcurrLine()) + "/" + std::to_string(CPUs.at(i).curr_process().getmaxLine()) + "STATUS: " + std::to_string(CPUs.at(i).curr_process().getstatus())<< std::endl;
+                        std::cout << CPUs.at(i).curr_process().getname() << "   " + CPUs.at(i).curr_process().displayTimestamp() + "    Core: " + std::to_string(i) + "     " + std::to_string(CPUs.at(i).curr_process().getcurrLine()) + "/" + std::to_string(CPUs.at(i).curr_process().getmaxLine())<< std::endl;
                     }
                     else
                     {
                         std::cout <<  "Core: " + std::to_string(i) + "     Status: Idle" << std::endl;
                     }
                 }
+
+                std::cout << "\nReady Processes:" << std::endl;
+                std::cout << "----------------------------------" << std::endl;
+                for (const auto& process : processes) {
+                    std::cout << process.getname() << "   " + process.displayTimestamp() + "    STATUS: READY     " + std::to_string(process.getcurrLine()) + "/" + std::to_string(process.getmaxLine()) << std::endl;
+                }
+
                 std::cout << "\nFinished Processes:" << std::endl;
                 std::cout << "----------------------------------" << std::endl;
                 for(const auto& process:finishedprocesses) {
@@ -186,7 +197,10 @@ process Shell::generatedummyprocess(std::string name)
     process newprocess(name);
     std::queue<std::shared_ptr<ICommand>> commands;
     std::string toPrint = "Hello world from: " + name + "!";
-    for (int i = 0; i < 100; i++)
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<> distrib(minLines, maxLines);
+    for (int i = 0; i < distrib(gen); i++)
     {
         commands.push(std::make_shared<PrintCommand>(newprocess.getID(), toPrint, newprocess.getPrintLogs()));
     }
