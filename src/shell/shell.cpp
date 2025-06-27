@@ -31,9 +31,10 @@ void Shell::start(){
     std::vector<process> sleepingprocesses;
     std::mutex deque_mutex;
     int Delay = 0;
+    int BatchDelay = 1;
 
     //generate a number of dummy processes with 100 print instructions(count is the number of processes created)
-    processes = generatedummyprocesses(10);
+    //processes = generatedummyprocesses(10);
 
     //generate CPUs
     CPUs = generateCPUs(4);
@@ -44,11 +45,10 @@ void Shell::start(){
 
     //start CPU ticks
     //TODO: Fix CPU Ticks, can be reimplmented.
-    generateprocess generateprocess(Delay, &processes, &scheduler, &deque_mutex, maxLines, minLines);
+    generateprocess generateprocess(BatchDelay, &processes, &scheduler, &deque_mutex, maxLines, minLines);
 
     //start scheduler and tick counts (currently CPU Ticks does not do anything)
     //scheduler is the one that starts the CPU threads, check scheduler.cpp for more information
-    //TODO:Fix CPU Ticks
     scheduler.start();
     generateprocess.start();
 
@@ -67,7 +67,7 @@ void Shell::start(){
                 std::cout << "Kindly initialize first." << std::endl;
                 system("pause");
             }
-            else if (userInput[0] == "initialize") {
+            else if (userInput[0] == "initialize" && !initialized) {
                 std::cout << userInput[0] << " command recognized." << std::endl;
                 system("pause");
                 initialized = true;

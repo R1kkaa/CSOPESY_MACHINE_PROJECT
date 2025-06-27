@@ -35,10 +35,10 @@ void generateprocess::run()
     while (true)
     {
         auto schedtick = scheduler->getTick();
-        if (createprocess && schedtick % Delay == 0 && currtick < schedtick)
+        if (createprocess && schedtick%Delay==0 && currtick < schedtick)
         {
             currtick = schedtick;
-            process newprocess = generatedummyprocess("process_" + std::to_string(processcount), minsize, maxsize);
+            process newprocess = generatedummyprocess("process_"+std::to_string(processcount), minsize, maxsize);
             processcount++;
             const std::lock_guard<std::mutex> lock(*queuemutex);
             //debug purposes
@@ -106,11 +106,11 @@ process generateprocess::generatedummyprocess(std::string name, int minsize, int
             break;
         }
         case 5: //SLEEP
-        {
-            commands.push(std::make_shared<SleepCommand>(newprocess.getID(), getRandomNumber(1, 256), newprocess.getsleepcounterPtr()));
-            count++;
-            break;
-        }
+            {
+                commands.push(std::make_shared<SleepCommand>(newprocess.getID(), getRandomNumber(1,256), newprocess.getsleepcounterPtr()));
+                count++;
+                break;
+            }
         }
     }
     newprocess.setinstructions(commands, commands.size());
@@ -187,11 +187,11 @@ std::tuple<ForCommand, int> generateprocess::generateforloop(int size, int decla
             break;
         }
         case 5: //SLEEP
-        {
-            commands.push_back(std::make_shared<SleepCommand>(newprocess->getID(), getRandomNumber(1, 256), newprocess->getsleepcounterPtr()));
-            count++;
-            break;
-        }
+            {
+                commands.push_back(std::make_shared<SleepCommand>(newprocess->getID(), getRandomNumber(1,256), newprocess->getsleepcounterPtr()));
+                count++;
+                break;
+            }
         }
     }
     ForCommand for_command(newprocess->getID(), commands, repeats);
