@@ -75,26 +75,31 @@ void Scheduler::run()
                     //TODO: Implement this sleep logic in RR
 
                     //If current process is sleeping
-                    if (cpu->curr_process().getstatus() == process::SLEEPING)
-                    {
-                        //push process into the sleep queue if process was not yet sent to sleeping vector
-                        if (!cpu->getSentToSleepingVector())
+                    if (cpu->curr_process().getstatus() == process::SLEEPING && cpu->getdone() == false) {
+                        //push the finished process to the finished processes vector
+                        if (!cpu->getSentToFinishedVector())
                         {
                             SleepingProcess->push_back(cpu->curr_process());
-                            //change passed to vector to true, resets back to false if set_curr_process is called
                             cpu->setSentToSleepingVector(true);
                         }
-                        //tell cpu that it's done
-                        cpu->setdone(true);
-                        //if there is process in ready queue, perform swap
-                        if (!ReadyQueue->empty())
-                        {
-                            //tell cpu that it's not done
-                            cpu->setdone(false);
-                            //set the process to the new one in the ready queue
+                        if (!ReadyQueue->empty()) {
+                            const std::lock_guard<std::mutex> lock(*queuemutex);
+                            //change the process
                             cpu->set_curr_process(ReadyQueue->front(), ReadyQueue);
-                            //pop the ready queue
+                            //reset value since has not been sent to finished vector
+                            cpu->setSentToSleepingVector(false);
+                            //remove the current process from the ready queue since it is already in the cpu
                             ReadyQueue->pop_front();
+                        }
+                        else {
+                            //if there are no more processes in the ready queue, set the CPU to not running
+                            if (ReadyQueue->empty() && !cpu->getdone())
+                            {
+                                if (cpu->curr_process().getstatus() == process::FINISHED)
+                                {
+                                    cpu->setdone(true);
+                                }
+                            }
                         }
                     }
 
