@@ -13,14 +13,18 @@ add_executable(CSOPESY_OS main.cpp
         src/screen/ICommand.h
         src/screen/Thread.cpp
         src/screen/Thread.h
-        src/screen/PrintCommand.cpp
-        src/screen/PrintCommand.h
         src/screen/CPUCore.cpp
         src/screen/CPUCore.h
         src/screen/Scheduler.cpp
         src/screen/Scheduler.h
-        src/screen/CPUticks.cpp
-        src/screen/CPUticks.h
+        src/screen/PrintCommand.cpp
+        src/screen/PrintCommand.h
+        src/screen/SleepCommand.cpp
+        src/screen/SleepCommand.h
+        src/screen/ForCommand.cpp
+        src/screen/ForCommand.h
+        src/screen/generateprocess.cpp
+        src/screen/generateprocess.h
         src/screen/DeclareCommand.cpp
         src/screen/DeclareCommand.h
         src/screen/AddCommand.cpp
