@@ -9,6 +9,8 @@
 #include <tuple>
 #include <tuple>
 #include <tuple>
+#include <tuple>
+#include <tuple>
 
 #include "AddCommand.h"
 #include "DeclareCommand.h"
@@ -17,7 +19,7 @@
 #include "SleepCommand.h"
 #include "SubCommand.h"
 
-generateprocess::generateprocess(int Delay, std::deque<process>* ReadyQueue, Scheduler* scheduler, std::mutex* queuemutex, int maxsize, int minsize)
+generateprocess::generateprocess(uint64_t Delay, std::deque<process>* ReadyQueue, Scheduler* scheduler, std::mutex* queuemutex, uint64_t maxsize, uint64_t minsize)
 {
     this->Delay = Delay;
     this->ReadyQueue = ReadyQueue;
@@ -53,7 +55,7 @@ void generateprocess::setcreateprocess(bool val)
     this->createprocess = val;
 }
 
-process generateprocess::generatedummyprocess(std::string name, int minsize, int maxsize)
+process generateprocess::generatedummyprocess(std::string name, uint64_t minsize, uint64_t maxsize)
 {
 
     process newprocess(name);
@@ -62,9 +64,9 @@ process generateprocess::generatedummyprocess(std::string name, int minsize, int
     std::random_device rd;
     std::mt19937 gen(rd());
     std::uniform_int_distribution<> distrib(minsize, maxsize);
-    int count = 0;
+    uint64_t count = 0;
     int declaredvars = 0;
-    int instructionsize = distrib(gen);
+    uint64_t instructionsize = distrib(gen);
     while (count < instructionsize)
     {
         switch (getRandomNumber(0, 5))
@@ -133,19 +135,19 @@ int generateprocess::getRandomNumber(int min, int max) {
     return dist(gen);
 }
 //return forcommand, num of declaredvars,
-std::tuple<ForCommand, int> generateprocess::generateforloop(int size, int declaredvars, std::string name, process* newprocess, int recurses)
+std::tuple<ForCommand, int> generateprocess::generateforloop(uint64_t size, int declaredvars, std::string name, process* newprocess, int recurses)
 {
     std::vector<std::shared_ptr<ICommand>> commands;
     std::string toPrint = "Hello world from: " + name + "!";
     std::random_device rd;
-    int count = 0;
-    int maxforloopsize = floor(size / 2);
+    uint64_t count = 0;
+    uint64_t maxforloopsize = floor(size / 2);
     if (maxforloopsize < 1)
     {
         maxforloopsize = 1;
     }
-    int repeats = getRandomNumber(1, maxforloopsize);
-    int sizeperloop = std::floor(size / repeats);
+    uint64_t repeats = getRandomNumber(1, maxforloopsize);
+    uint64_t sizeperloop = std::floor(size / repeats);
 
     while (count < sizeperloop)
     {
@@ -197,3 +199,4 @@ std::tuple<ForCommand, int> generateprocess::generateforloop(int size, int decla
     ForCommand for_command(newprocess->getID(), commands, repeats);
     return std::make_tuple(for_command, declaredvars);
 }
+

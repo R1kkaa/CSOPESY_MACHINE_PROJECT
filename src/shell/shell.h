@@ -11,11 +11,11 @@ class Shell {
         Shell() = default;
 
     static void start();
-    static process* findsession(std::vector<CPUCore>& CPUs, std::deque<process>& processes, std::string name);
+    static process* findsession(std::vector<CPUCore>& CPUs, std::deque<process>& processes, std::vector<process>& sleepingprocesses, std::string name);
     static void openscreen(process* screen);
-    static process generatedummyprocess(std::string name);
-    static std::deque<process> generatedummyprocesses(int count);
     static std::vector<CPUCore> generateCPUs(int num);
+    static std::unordered_map<std::string, std::string> readConfigFile(const std::string& filename);
+    static double fractionToPercent(double numerator, double denominator);
 };
 
 #endif //SHELL_H

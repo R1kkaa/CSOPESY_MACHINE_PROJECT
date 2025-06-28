@@ -12,8 +12,6 @@ class Scheduler;
 class CPUCore: public Thread {
 public:
     process currProcess;
-    int* CPUticks;
-    int* Delay;
     int id;
     int currTick;
     bool running;

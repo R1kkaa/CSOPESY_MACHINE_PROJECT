@@ -7,7 +7,7 @@
 #include <algorithm>
 int TICK_DELAY = 500;
 //TODO: fix scheduler.cpp and scheduler.h, add the finishedprocess pointer as a class attribute so we can put finishedprocesses there
-Scheduler::Scheduler(int Delay, std::deque<process>* ReadyQueue, std::vector<process>* FinishedProcess, std::vector<process>* SleepingProcess, bool isRR, std::vector<CPUCore>* CPUs, std::mutex* queuemutex)
+Scheduler::Scheduler(uint64_t TimeQuantum, uint64_t Delay, std::deque<process>* ReadyQueue, std::vector<process>* FinishedProcess, std::vector<process>* SleepingProcess, bool isRR, std::vector<CPUCore>* CPUs, std::mutex* queuemutex)
 {
 	this->FinishedProcess = FinishedProcess;
     this->ReadyQueue = ReadyQueue;
@@ -17,6 +17,7 @@ Scheduler::Scheduler(int Delay, std::deque<process>* ReadyQueue, std::vector<pro
     this->Delay = Delay + 1;
     this->queuemutex = queuemutex;
     this->SleepingProcess = SleepingProcess;
+    this->TimeQuantum = TimeQuantum;
 }
 
 
@@ -158,7 +159,6 @@ void Scheduler::run()
         //TODO: Implement RR here
         /*Insert RR code here*/
         if (isRR) {
-            int TimeQuantum = 5;
             for (int i = 0; i < CPUs->size(); i++)
             {
                 //gets current cpu in iteration

@@ -1,4 +1,7 @@
 #include "shell.h"
+
+#include <fstream>
+
 #include "util.h"
 #include "../screen/process.h"
 #include <iostream>
@@ -17,9 +20,6 @@
 #include "../screen/Scheduler.h"
 
 //TODO: Read config file first and implement "initialize command" (We can do this last)
-int isRR = false;
-const int minLines = 5;
-const int maxLines = 20;
 
 void Shell::start(){
 
@@ -30,27 +30,24 @@ void Shell::start(){
     std::vector<process> finishedprocesses;
     std::vector<process> sleepingprocesses;
     std::mutex deque_mutex;
-    int Delay = 0;
-    int BatchDelay = 1;
-
-    //generate a number of dummy processes with 100 print instructions(count is the number of processes created)
-    //processes = generatedummyprocesses(10);
+    uint64_t Delay = 0;
+    uint64_t BatchDelay = 1;
+    uint64_t TimeQuantum = 0;
+    bool isRR = false;
+    uint64_t minLines = 5;
+    uint64_t maxLines = 20;
 
     //generate CPUs
     CPUs = generateCPUs(4);
 
     //initialize scheduler
-    //TODO: Add a pointer to the finishedprocess variable in the scheduler constructor so the scheduler can access and put finished processes in the constructor (basically modify scheduler.cpp and add the finishedprocess as a function parameter)
-    Scheduler scheduler(Delay, &processes, &finishedprocesses, &sleepingprocesses, isRR, &CPUs, &deque_mutex);
+    Scheduler scheduler(TimeQuantum, Delay, &processes, &finishedprocesses, &sleepingprocesses, isRR, &CPUs, &deque_mutex);
 
     //start CPU ticks
-    //TODO: Fix CPU Ticks, can be reimplmented.
     generateprocess generateprocess(BatchDelay, &processes, &scheduler, &deque_mutex, maxLines, minLines);
 
     //start scheduler and tick counts (currently CPU Ticks does not do anything)
     //scheduler is the one that starts the CPU threads, check scheduler.cpp for more information
-    scheduler.start();
-    generateprocess.start();
 
     //Main Menu, command recognition area
     bool initialized = false;
@@ -69,6 +66,29 @@ void Shell::start(){
             }
             else if (userInput[0] == "initialize" && !initialized) {
                 std::cout << userInput[0] << " command recognized." << std::endl;
+                auto config = readConfigFile("config.txt");
+                CPUs = generateCPUs(stoi(config["num-cpu"]));
+                Delay = stoi(config["delay-per-exec"]);
+                BatchDelay = stoi(config["batch-process-freq"]);
+                maxLines = stoi(config["max-ins"]);
+                minLines = stoi(config["min-ins"]);
+                TimeQuantum = stoi(config["quantum-cycles"]);
+                if (config["scheduler"]=="rr")
+                {
+                    scheduler.setRR(true);
+                }
+                else
+                {
+                    scheduler.setRR(false);
+                }
+                scheduler.set_cpus(&CPUs);
+                scheduler.set_delay(Delay+1);
+                scheduler.setTimeQuantum(TimeQuantum);
+                generateprocess.set_delay(BatchDelay);
+                generateprocess.set_maxsize(maxLines);
+                generateprocess.set_minsize(minLines);
+                scheduler.start();
+                generateprocess.start();
                 system("pause");
                 initialized = true;
                 Util::printMenu();
@@ -90,8 +110,8 @@ void Shell::start(){
             else if (initialized && userInput[0] == "screen" && userInput[1] == "-r")
             {
                 //findsession either returns an existing process or creates a new process, openscreen opens the said process
-                process* foundProcess = findsession(CPUs, processes, userInput[2]);
-                if(foundProcess == nullptr) { //if no existin process, return not found
+                process* foundProcess = findsession(CPUs, processes, sleepingprocesses, userInput[2]);
+                if(foundProcess == nullptr) { //if no existing process, return not found
                     Util::printMenu();
                     std::cout << "Process <" + userInput[2] + "> not found." << std::endl;
                     system("pause");
@@ -102,12 +122,12 @@ void Shell::start(){
                 }
             }
             else if (initialized && userInput[0] == "screen" && userInput[1] == "-s") {
-                process* foundProcess = findsession(CPUs, processes, userInput[2]);
+                process* foundProcess = findsession(CPUs, processes, sleepingprocesses, userInput[2]);
                 if (foundProcess == nullptr) { //if no existing process, make one
                     Util::clearScreen();
-                    process newprocess = generatedummyprocess(userInput[2]);
+                    process newprocess = generateprocess::generatedummyprocess(userInput[2], minLines, maxLines);
                     processes.push_back(newprocess);
-                    openscreen(&processes.back());
+                    openscreen(&newprocess);
                 }
                 else {
                     Util::printMenu();
@@ -116,25 +136,31 @@ void Shell::start(){
                 }
             }
 
-            //TODO: Add finished process here
             else if (userInput[0] == "screen" && userInput[1] == "-ls" && initialized) {
                 bool run = true;
                 while (run){
                     Util::printMenu();
                     std::cout << "-----------------------------------" << std::endl;
                     std::cout << "Running Processes:" << std::endl;
+                    int count = 0;
                     for (int i = 0; i < CPUs.size(); i++)
                     {
                         if (!CPUs.at(i).getdone()) {
                             std::cout << CPUs.at(i).curr_process().getname() << "   " + CPUs.at(i).curr_process().displayTimestamp() + "    Core: " + std::to_string(i) + "     " + std::to_string(CPUs.at(i).curr_process().getcurrLine()) + "/" + std::to_string(CPUs.at(i).curr_process().getmaxLine()) << std::endl;
+                            count++;
                         }
                         else
                         {
                             std::cout << "Core: " + std::to_string(i) + "     Status: Idle" << std::endl;
                         }
                     }
+                    std::cout << "-----------------------------------" << std::endl;
+                    std::cout << "\nCPU Utilization:" + std::to_string((int)fractionToPercent(count, CPUs.size())) + "%" << std::endl;
+                    std::cout << "\nAvailable Cores:" + std::to_string(CPUs.size()-count) << std::endl;
 
-                    std::cout << "\nReady Processes:" << std::endl;
+
+
+                    std::cout << "\n\nReady Processes:" << std::endl;
                     std::cout << "----------------------------------" << std::endl;
                     for (const auto& process : processes) {
                         std::cout << process.getname() << "   " + process.displayTimestamp() + "    STATUS: READY     " + std::to_string(process.getcurrLine()) + "/" + std::to_string(process.getmaxLine()) << std::endl;
@@ -173,11 +199,52 @@ void Shell::start(){
             //TODO: Add adding to file here
             else if (userInput[0] == "report-util" && initialized) {
                 std::cout << userInput[0] << " command recognized." << std::endl;
+                // Open file in truncate mode to refresh/overwrite existing content
+                std::ofstream reportFile("report-util", std::ios::trunc);
+
+                if (!reportFile.is_open()) {
+                    std::cerr << "Error: Could not open report-util file for writing!" << std::endl;
+                    return;
+                }
+
+                reportFile << "-----------------------------------" << std::endl;
+                reportFile << "Running Processes:" << std::endl;
+                int count = 0;
+                for (int i = 0; i < CPUs.size(); i++)
+                {
+                    if (!CPUs.at(i).getdone()) {
+                        reportFile << CPUs.at(i).curr_process().getname() << "   " + CPUs.at(i).curr_process().displayTimestamp() + "    Core: " + std::to_string(i) + "     " + std::to_string(CPUs.at(i).curr_process().getcurrLine()) + "/" + std::to_string(CPUs.at(i).curr_process().getmaxLine()) << std::endl;
+                        count++;
+                    }
+                    else
+                    {
+                        reportFile << "Core: " + std::to_string(i) + "     Status: Idle" << std::endl;
+                    }
+                }
+                reportFile << "-----------------------------------" << std::endl;
+                reportFile << "\nCPU Utilization:" + std::to_string((int)fractionToPercent(count, CPUs.size())) + "%" << std::endl;
+                reportFile << "\nAvailable Cores:" + std::to_string(CPUs.size()-count) << std::endl;
+
+                reportFile << "\n\nReady Processes:" << std::endl;
+                reportFile << "----------------------------------" << std::endl;
+                for (const auto& process : processes) {
+                    reportFile << process.getname() << "   " + process.displayTimestamp() + "    STATUS: READY     " + std::to_string(process.getcurrLine()) + "/" + std::to_string(process.getmaxLine()) << std::endl;
+                }
+
+                reportFile << "\nSleeping Processes:" << std::endl;
+                reportFile << "----------------------------------" << std::endl;
+                for (const auto& process : sleepingprocesses) {
+                    reportFile << process.getname() << "   " + process.displayTimestamp() + "    STATUS: SLEEPING     " + std::to_string(process.getcurrLine()) + "/" + std::to_string(process.getmaxLine()) << std::endl;
+                }
+
+                reportFile << "\nFinished Processes:" << std::endl;
+                reportFile << "----------------------------------" << std::endl;
+                for (const auto& process : finishedprocesses) {
+                    reportFile << process.getname() << "   " + process.displayTimestamp() + "    STATUS: FINISHED     " + std::to_string(process.getcurrLine()) + "/" + std::to_string(process.getmaxLine()) << std::endl;
+                }
+
+                reportFile.close();
             }
-            /*TODO: distinguish -r and -s commands, -r is to open an existing process, -s to create a new process
-             *TODO: screen -r <process_name> -> if process exists and not finished, open process (openscreen), if does not exist do nothing/return error
-             *TODO: screen -s <process_name> -> if process does not exist (if !fix find session to not automatically add a process if process_name is not found) create new process and open (use openscreen command), if exists do nothing/return error
-            */
             else {
                 for (auto i : userInput)
                     std::cout << i << ' ';
@@ -194,8 +261,7 @@ void Shell::start(){
 }
 
 //Finds if process currently exists and is in the CPU/Ready Queue
-//TODO: Current implementation is if process is not found, then create new proccess and add it into the ReadyQueue (process deque), fix this so that it only checks if the process exists, can another function for actual process retrieval (?)
-process* Shell::findsession(std::vector<CPUCore>& CPUs, std::deque<process>& processes, std::string name)
+process* Shell::findsession(std::vector<CPUCore>& CPUs, std::deque<process>& processes,std::vector<process>& sleepingprocesses, std::string name)
 {
     //check cpu cores
     for (auto& i : CPUs)
@@ -213,6 +279,14 @@ process* Shell::findsession(std::vector<CPUCore>& CPUs, std::deque<process>& pro
     if (it2 != processes.end()) {
         return &*it2;  // Return pointer to the found Screen
     }
+
+    auto it3 = std::ranges::find_if(sleepingprocesses, [&](const process& process) {
+    return process.getname() == name;
+    });
+    if (it3 != sleepingprocesses.end()) {
+        return &*it3;  // Return pointer to the found Screen
+    }
+
     return nullptr;
 }
 
@@ -233,6 +307,7 @@ void Shell::openscreen(process* screen)
             }
             if (userInput[0] == "process-smi")
             {
+                std::cout << "Instructions: " << std::to_string(screen->getcurrLine()) << "/" << std::to_string(screen->getmaxLine()) << std::endl;
                 std::cout << "Logs: \n\n";
                 auto logs = screen->getFormattedLogs();
                 for (auto i : logs)
@@ -248,36 +323,6 @@ void Shell::openscreen(process* screen)
     }
 }
 
-//WEEK 6: generates a print process
-
-process Shell::generatedummyprocess(std::string name)
-{
-    process newprocess(name);
-    std::queue<std::shared_ptr<ICommand>> commands;
-    std::string toPrint = "Hello world from: " + name + "!";
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_int_distribution<> distrib(minLines, maxLines);
-    for (int i = 0; i < distrib(gen); i++)
-    {
-        commands.push(std::make_shared<PrintCommand>(newprocess.getID(), toPrint, newprocess.getPrintLogs()));
-        commands.push(std::make_shared<SleepCommand>(newprocess.getID(), 5, newprocess.getsleepcounterPtr()));
-    }
-    newprocess.setinstructions(commands, commands.size());
-    return newprocess;
-}
-
-//WEEK 6: generates a COUNT amount of print process and returns a deque
-std::deque<process> Shell::generatedummyprocesses(int count)
-{
-    std::deque<process> newprocesses;
-    for (int i = 0; i < count; i++)
-    {
-        newprocesses.push_back(generatedummyprocess("process_" + std::to_string(i)));
-    }
-    return newprocesses;
-}
-
 //Generate CPU, returns a CPU Vector
 std::vector<CPUCore> Shell::generateCPUs(int num)
 {
@@ -287,4 +332,26 @@ std::vector<CPUCore> Shell::generateCPUs(int num)
         CPUs.push_back(CPUCore(i));
     }
     return CPUs;
+}
+
+
+std::unordered_map<std::string, std::string> Shell::readConfigFile(const std::string& filename) {
+    std::unordered_map<std::string, std::string> config;
+    std::ifstream file(filename);
+    std::string line;
+
+    while (std::getline(file, line)) {
+        std::istringstream iss(line);
+        std::string key, value;
+
+        if (iss >> key >> value) {
+            config[key] = value;
+        }
+    }
+
+    return config;
+}
+
+double Shell::fractionToPercent(double numerator, double denominator) {
+    return (numerator / denominator) * 100.0;
 }

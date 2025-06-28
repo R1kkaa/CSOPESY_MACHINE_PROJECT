@@ -16,8 +16,9 @@ class Scheduler: public Thread{
     std::deque<process>* ReadyQueue;
 	std::vector<process>* FinishedProcess;
     std::vector<CPUCore>* CPUs;
-    int CPUticks;
-    int Delay;
+    uint64_t CPUticks;
+    uint64_t Delay;
+    uint64_t TimeQuantum = 0;
     bool isRR = false;
     std::mutex* queuemutex;
     std::vector<process>* SleepingProcess;
@@ -25,9 +26,37 @@ class Scheduler: public Thread{
     public:
     bool isDelayDone() const;
     int getTick();
-    Scheduler(int Delay, std::deque<process>* ReadyQueue, std::vector<process>* FinishedProcess,
+    Scheduler(uint64_t TimeQuantum, uint64_t Delay, std::deque<process>* ReadyQueue, std::vector<process>* FinishedProcess,
               std::vector<process>* SleepingProcess, bool isRR, std::vector<CPUCore>* CPUs, std::mutex* queuemutex);
     void run() override;
+
+    [[nodiscard]] std::vector<CPUCore>* get_cpus() const
+    {
+        return CPUs;
+    }
+
+    void set_cpus(std::vector<CPUCore>* cp_us)
+    {
+        CPUs = cp_us;
+    }
+
+    [[nodiscard]] uint64_t get_delay() const
+    {
+        return Delay;
+    }
+
+    void set_delay(uint64_t delay)
+    {
+        Delay = delay;
+    }
+    void setRR(bool isRR)
+    {
+        this->isRR = isRR;
+    }
+    void setTimeQuantum(uint64_t TimeQuantum)
+    {
+        this->TimeQuantum = TimeQuantum;
+    }
 };
 
 
