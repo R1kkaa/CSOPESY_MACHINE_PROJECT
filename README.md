@@ -6,8 +6,7 @@ Marucot, Hermione<br>
 The entry point is in the main.cpp file.<br>
 <br>
 To run the code:<br>
-Compile with <br>
-g++ main.cpp src/screen/screen.cpp src/screen/process.cpp src/shell/screen.cpp src/shell/util.cpp -o main.exe<br>
+Compile together into an executable
 <br>
-Run the main.exe<br>
+Run the executable<br>
 ./main<br>
