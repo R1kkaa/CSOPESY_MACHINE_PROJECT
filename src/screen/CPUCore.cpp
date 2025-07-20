@@ -4,34 +4,45 @@
 
 #include "CPUCore.h"
 
-#include <utility>
-CPUCore::CPUCore(int id) : currProcess("init")
+CPUCore::CPUCore(int id)
 {
     this->id = id;
     this->running = false;
     this->done = true;
     this->currTick = 0;
     this->hasruninstruction = false;
+    this->timequantum = 0;
 }
 
 [[noreturn]] void CPUCore::run()
 {
+    Scheduler::getInstance().wait_for_start();
     while (true)
     {
-        if (SchedulerPtr->getTick() > currTick && SchedulerPtr->isDelayDone())
+        std::unique_lock<std::mutex> lock(*Scheduler::getInstance().getTickMutex());
+        cv_ptr->wait(lock, [this]{
+            return currTick < Scheduler::getInstance().getTick();});
+        if (currProcess != nullptr)
         {
-            setruninstruction(false);
+            if (Scheduler::getInstance().isDelayDone())
+            {
+                setruninstruction(false);
+            }
+            if (currProcess->getstatus() != process::FINISHED && !hasruninstruction)
+            {
+                currProcess->runInstruction();
+                setruninstruction(true);
+                //if process is sleeping/finished -> remove process
+            }
+            remove_curr_process();
         }
-        if (currProcess.getstatus() != process::FINISHED && !hasruninstruction)
-        {
-            currProcess.runInstruction();
-            setruninstruction(true);
-            currTick = SchedulerPtr->getTick();
-        }
+        timequantum++;
+        currTick = Scheduler::getInstance().getTick();
+        Scheduler::getInstance().report_done();
     }
 }
 
-process CPUCore::curr_process() const
+std::shared_ptr<process> CPUCore::curr_process() const
 {
     return currProcess;
 }
@@ -45,20 +56,48 @@ void CPUCore::set_running(bool running)
 {
     this->running = running;
 }
-void CPUCore::set_curr_process(process curr_process, std::deque<process>* ReadyQueue)
+void CPUCore::set_curr_process(const std::shared_ptr<process>& curr_process)
 {
-    if (running && currProcess.getstatus() != process::FINISHED && currProcess.getstatus() != process::SLEEPING)
+    if (curr_process == nullptr)
     {
-        currProcess.setcore(-1);
-        currProcess.setstatus(process::STOPPED);
-        ReadyQueue->push_back(currProcess);
+        running = false;
     }
-    setSentToSleepingVector(false);
-    currProcess = std::move(curr_process);
-    currProcess.setstatus(process::RUNNING);
-    currProcess.setcore(this->id);
+    else
+    {
+        running = true;
+        this->currProcess = curr_process;
+        currProcess->setstatus(process::RUNNING);
+        currProcess->setcore(this->id);
+    }
 }
-
+void CPUCore::preempt_curr_process()
+{
+    timequantum = 0;
+    running = false;
+    if (currProcess != nullptr)
+        Scheduler::getInstance().push_to_ready(currProcess);
+    this->currProcess = nullptr;
+}
+void CPUCore::remove_curr_process()
+{
+    if (currProcess != nullptr)
+    {
+        if (currProcess->getstatus() == process::FINISHED)
+        {
+            timequantum = 0;
+            running = false;
+            Scheduler::getInstance().push_to_finished(currProcess);
+            this->currProcess = nullptr;
+        }
+        else if (currProcess->getstatus() == process::SLEEPING)
+        {
+            timequantum = 0;
+            running = false;
+            Scheduler::getInstance().push_to_sleeping(currProcess);
+            this->currProcess = nullptr;
+        }
+    }
+}
 bool CPUCore::getdone()
 {
     return done;
@@ -100,4 +139,18 @@ void CPUCore::setSentToSleepingVector(bool val)
 bool CPUCore::getSentToSleepingVector()
 {
     return sentToSleepingVector;
+}
+
+void CPUCore::setcv(std::condition_variable* cv)
+{
+    this->cv_ptr = cv;
+}
+
+int CPUCore::gettimequantum()
+{
+    return timequantum;
+}
+void CPUCore::settimequantum(int timequantum)
+{
+    this->timequantum = timequantum;
 }

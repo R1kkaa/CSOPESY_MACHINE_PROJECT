@@ -6,11 +6,6 @@
 
 #include <random>
 #include <tuple>
-#include <tuple>
-#include <tuple>
-#include <tuple>
-#include <tuple>
-#include <tuple>
 
 #include "AddCommand.h"
 #include "DeclareCommand.h"
@@ -18,8 +13,8 @@
 #include "PrintCommand.h"
 #include "SleepCommand.h"
 #include "SubCommand.h"
-
-generateprocess::generateprocess(uint64_t Delay, std::deque<process>* ReadyQueue, Scheduler* scheduler, std::mutex* queuemutex, uint64_t maxsize, uint64_t minsize)
+#include "Scheduler.h"
+generateprocess::generateprocess(uint64_t Delay, std::deque<std::shared_ptr<process>>* ReadyQueue, Scheduler* scheduler, std::mutex* queuemutex, uint64_t maxsize, uint64_t minsize)
 {
     this->Delay = Delay;
     this->ReadyQueue = ReadyQueue;
@@ -36,16 +31,13 @@ void generateprocess::run()
 {
     while (true)
     {
-        auto schedtick = scheduler->getTick();
+        auto schedtick = Scheduler::getInstance().getTick();
         if (createprocess && schedtick%Delay==0 && currtick < schedtick)
         {
             currtick = schedtick;
             process newprocess = generatedummyprocess("process_"+std::to_string(processcount), minsize, maxsize);
             processcount++;
-            const std::lock_guard<std::mutex> lock(*queuemutex);
-            //debug purposes
-            //std::cout <<"Size: " << std::to_string(newprocess.getInstructions()->size()) << std::endl;
-            ReadyQueue->push_back(newprocess);
+            Scheduler::getInstance().push_to_ready(std::make_shared<process>(newprocess));
         }
     }
 }
@@ -55,20 +47,42 @@ void generateprocess::setcreateprocess(bool val)
     this->createprocess = val;
 }
 
-process generateprocess::generatedummyprocess(std::string name, uint64_t minsize, uint64_t maxsize)
+process generateprocess::generatedummyprocess(const std::string name, uint64_t minsize, uint64_t maxsize)
 {
 
     process newprocess(name);
     std::queue<std::shared_ptr<ICommand>> commands;
-    std::string toPrint = "Hello world from: " + name + "!";
+    std::string toPrint = "Value from: ";
     std::random_device rd;
     std::mt19937 gen(rd());
     std::uniform_int_distribution<> distrib(minsize, maxsize);
     uint64_t count = 0;
     int declaredvars = 0;
     uint64_t instructionsize = distrib(gen);
+
+    /*
+    newprocess.getvarList()->insert({"x",0});
+    newprocess.getvarList()->insert({"1",1});
+    newprocess.getvarList()->insert({"2",2});
+    newprocess.getvarList()->insert({"3",3});
+    newprocess.getvarList()->insert({"4",4});
+    newprocess.getvarList()->insert({"5",5});
+    newprocess.getvarList()->insert({"6",6});
+    newprocess.getvarList()->insert({"7",7});
+    newprocess.getvarList()->insert({"8",8});
+    newprocess.getvarList()->insert({"9",9});
+    newprocess.getvarList()->insert({"10",10});
+    for (int i = 0; i < 50000; i++)
+    {
+        commands.push(std::make_shared<PrintCommand>(newprocess.getID(), toPrint, "x", newprocess.getPrintLogs(), newprocess.getvarList()));
+        commands.push(std::make_shared<AddCommand>(newprocess.getID(), "x", "x", std::to_string(getRandomNumber(1,10)), newprocess.getvarList()));
+    }
+    newprocess.setinstructions(commands, commands.size());
+    return newprocess;
+    */
     while (count < instructionsize)
     {
+
         switch (getRandomNumber(0, 5))
         {
         case 0: //PRINT
@@ -101,7 +115,7 @@ process generateprocess::generatedummyprocess(std::string name, uint64_t minsize
             auto ret = generateforloop(instructionsize - count, declaredvars, name, &newprocess, 0);
             count += std::get<0>(ret).getsize();
             declaredvars = std::get<1>(ret);
-            for (auto var : std::get<0>(ret).getinstructions())
+            for (const auto var : std::get<0>(ret).getinstructions())
             {
                 commands.push(var);
             }
@@ -129,7 +143,7 @@ int generateprocess::getRandomNumber(int min, int max) {
     static std::mt19937 gen(std::chrono::steady_clock::now().time_since_epoch().count());
 
     // Create a uniform distribution in the specified range
-    std::uniform_int_distribution<int> dist(min, max);
+    std::uniform_int_distribution<> dist(min, max);
 
     // Generate and return the random number
     return dist(gen);

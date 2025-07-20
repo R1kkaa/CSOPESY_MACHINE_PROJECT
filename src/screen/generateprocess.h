@@ -14,7 +14,7 @@
 
 class generateprocess: public Thread{
     uint64_t Delay;
-    std::deque<process>* ReadyQueue;
+    std::deque<std::shared_ptr<process>>* ReadyQueue;
     Scheduler* scheduler;
     std::mutex* queuemutex;
     bool createprocess;
@@ -23,7 +23,8 @@ class generateprocess: public Thread{
     int processcount = 0;
     uint64_t currtick = 0;
     public:
-    generateprocess(uint64_t Delay, std::deque<process>* ReadyQueue, Scheduler* scheduler,std::mutex* queuemutex, uint64_t maxsize, uint64_t minsize);
+    generateprocess(uint64_t Delay, std::deque<std::shared_ptr<process>>* ReadyQueue, Scheduler* scheduler,
+                    std::mutex* queuemutex, uint64_t maxsize, uint64_t minsize);
     void run() override;
     void setcreateprocess(bool val);
     static process generatedummyprocess(std::string name, uint64_t minsize, uint64_t maxsize);

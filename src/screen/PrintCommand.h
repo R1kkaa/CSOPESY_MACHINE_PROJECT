@@ -21,7 +21,8 @@ public:
     PrintCommand(int pid, std::string& toPrint, std::string var, std::shared_ptr<std::stringstream> logs, std::shared_ptr<std::unordered_map<std::string, uint16_t>> varList): ICommand(pid, PRINT), logs(std::move(logs)), varList(std::move(varList))
     {
         this->toPrint = toPrint;
-        this->var = var;
+        this->var = std::move(var);
+        this->varList = std::move(varList);
 
     };
     void execute() override;

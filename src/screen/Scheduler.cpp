@@ -5,9 +5,14 @@
 #include "Scheduler.h"
 
 #include <algorithm>
-int TICK_DELAY = 500;
-//TODO: fix scheduler.cpp and scheduler.h, add the finishedprocess pointer as a class attribute so we can put finishedprocesses there
-Scheduler::Scheduler(uint64_t TimeQuantum, uint64_t Delay, std::deque<process>* ReadyQueue, std::vector<process>* FinishedProcess, std::vector<process>* SleepingProcess, bool isRR, std::vector<CPUCore>* CPUs, std::mutex* queuemutex)
+int TICK_DELAY = 10;
+std::unique_ptr<Scheduler> Scheduler::instance = nullptr;
+std::once_flag Scheduler::initialized;
+
+Scheduler::Scheduler() {
+}
+
+Scheduler::Scheduler(uint64_t TimeQuantum, uint64_t Delay, std::deque<std::shared_ptr<process>>* ReadyQueue, std::vector<std::shared_ptr<process>>* FinishedProcess, std::vector<std::shared_ptr<process>>* SleepingProcess, bool isRR, std::vector<CPUCore>* CPUs, std::mutex* queuemutex)
 {
 	this->FinishedProcess = FinishedProcess;
     this->ReadyQueue = ReadyQueue;
@@ -18,252 +23,122 @@ Scheduler::Scheduler(uint64_t TimeQuantum, uint64_t Delay, std::deque<process>* 
     this->queuemutex = queuemutex;
     this->SleepingProcess = SleepingProcess;
     this->TimeQuantum = TimeQuantum;
+    this->numCores = CPUs->size();
 }
 
+Scheduler& Scheduler::getInstance(uint64_t TimeQuantum, uint64_t Delay,
+    std::deque<std::shared_ptr<process>>* ReadyQueue, std::vector<std::shared_ptr<process>>* FinishedProcess,
+    std::vector<std::shared_ptr<process>>* SleepingProcess, bool isRR, std::vector<CPUCore>* CPUs,
+    std::mutex* queuemutex)
+{
+    std::call_once(Scheduler::initialized, [&]() {
+    Scheduler::instance = std::unique_ptr<Scheduler>(new Scheduler(TimeQuantum, Delay, ReadyQueue,
+                                                                   FinishedProcess, SleepingProcess,
+                                                                   isRR, CPUs, queuemutex));
+});
+    return *Scheduler::instance;
+}
 
+Scheduler& Scheduler::getInstance()
+{
+    if (!Scheduler::instance) {
+        throw std::runtime_error("Scheduler not initialized with parameters");
+    }
+    return *Scheduler::instance;
+}
+
+Scheduler::~Scheduler() {
+}
 
 void Scheduler::run()
 {
     //TODO: add switching processes with the scheduler algorithms
-    //if algo is not round robin, and ready queue still isn't empty
-    int CPUCOUNTER = 0;
+    //start all cpus
+    start_work();
+    //tell all threads that all cpus started
+    cv.notify_all();
     while (true)
     {
-        //check sleeping processes here
-        if (!SleepingProcess->empty())
-        {
-            //debugging purposes
-            //std::cout << "Curr Cpu Tick: " + std::to_string(CPUticks) + "\n";
-            for (int i = SleepingProcess->size() - 1; i >= 0; i--) {
-                SleepingProcess->at(i).setsleeptime(SleepingProcess->at(i).getsleeptime() + 1);
-                if (SleepingProcess->at(i).getsleepcounter() == SleepingProcess->at(i).getsleeptime()) {  // condition
-                    //debugging purposes
-                    //std::cout << "Sleep is Done! for: " + SleepingProcess[i].getname() + "\n";
-                    //reset sleepcounter
-                    SleepingProcess->at(i).setsleeptime(0);
-                    SleepingProcess->at(i).setstatus(process::RUNNING);
-                    ReadyQueue->push_back(SleepingProcess->at(i));
-                    SleepingProcess->erase(SleepingProcess->begin() + i);
-                }
-            }
-        }
-
+        //wait for all processes to execute
+        CPUticks += 1;
+        wait_for_execute();
+        //checks all the sleeping process if they should be woken up
+        checkSleepingProcesses();
         if (!isRR)
         {
-            for (int i = 0; i < CPUs->size(); i++)
-            {
-                //gets current cpu in iteration
-                CPUCore* cpu = &CPUs->at(i);
-                //if cpu is not yet running (has not been started yet)
-                if (cpu->get_running() == false && !ReadyQueue->empty())
-                {
-                    const std::lock_guard<std::mutex> lock(*queuemutex);
-                    cpu->setScheduler(this);
-                    //set the current process of the cpu to the front of the ready queue, also puts back the process that was in the CPU back to the ReadyQueue
-                    cpu->set_curr_process(ReadyQueue->front(), ReadyQueue);
-                    //sets the CPU to running
-                    cpu->set_running(true);
-                    //removes the current process from the readyqueue since it is already in the cpu
-                    ReadyQueue->pop_front();
-                    //starts the CPU thread
-                    cpu->start();
-
-                }
-                else if (cpu->get_running() == true) {
-                    //scheduler thread start
-                    if (!ReadyQueue->empty())
-                    {
-                        cpu->setdone(false);
-                    }
-                    //TODO: Implement this sleep logic in RR
-
-                    //If current process is sleeping
-                    /*
-                    if (cpu->curr_process().getstatus() == process::SLEEPING)
-                    {
-                        //push process into the sleep queue if process was not yet sent to sleeping vector
-                        if (!cpu->getSentToSleepingVector())
-                        {
-                            SleepingProcess->push_back(cpu->curr_process());
-                            cpu->setSentToSleepingVector(true);
-                        }
-                        if (!ReadyQueue->empty()) {
-                            const std::lock_guard<std::mutex> lock(*queuemutex);
-                            //change the process
-                            cpu->set_curr_process(ReadyQueue->front(), ReadyQueue);
-                            //reset value since has not been sent to finished vector
-                            cpu->setSentToSleepingVector(false);
-                            //remove the current process from the ready queue since it is already in the cpu
-                            ReadyQueue->pop_front();
-                        }
-                    }*/
-
-                    if (cpu->curr_process().getstatus() == process::FINISHED && cpu->getdone() == false) {
-                        //push the finished process to the finished processes vector
-                        if (!cpu->getSentToFinishedVector())
-                        {
-                            FinishedProcess->push_back(cpu->curr_process());
-                            cpu->setSenTtoFinishedVector(true);
-                        }
-                        if (!ReadyQueue->empty()) {
-                            const std::lock_guard<std::mutex> lock(*queuemutex);
-                            //change the process
-                            cpu->set_curr_process(ReadyQueue->front(), ReadyQueue);
-                            //reset value since has not been sent to finished vector
-                            cpu->setSenTtoFinishedVector(false);
-                            //remove the current process from the ready queue since it is already in the cpu
-                            ReadyQueue->pop_front();
-                        }
-                        else {
-                            //if there are no more processes in the ready queue, set the CPU to not running
-                            if (ReadyQueue->empty() && !cpu->getdone())
-                            {
-                                if (cpu->curr_process().getstatus() == process::FINISHED)
-                                {
-                                    cpu->setdone(true);
-                                }
-                            }
-                        }
-                    }
-
-                    else if (cpu->curr_process().getstatus() == process::SLEEPING && cpu->getdone() == false) {
-                        //push the finished process to the finished processes vector
-                        if (!cpu->getSentToSleepingVector())
-                        {
-                            SleepingProcess->push_back(cpu->curr_process());
-                            cpu->setSentToSleepingVector(true);
-                        }
-                        if (!ReadyQueue->empty()) {
-                            const std::lock_guard<std::mutex> lock(*queuemutex);
-                            //change the process
-                            cpu->set_curr_process(ReadyQueue->front(), ReadyQueue);
-                            //reset value since has not been sent to finished vector
-                            cpu->setSentToSleepingVector(false);
-                            //remove the current process from the ready queue since it is already in the cpu
-                            ReadyQueue->pop_front();
-                        }
-                        else {
-                            //if there are no more processes in the ready queue, set the CPU to not running
-                            if (ReadyQueue->empty() && !cpu->getdone())
-                            {
-                                if (cpu->curr_process().getstatus() == process::SLEEPING)
-                                {
-                                    cpu->setdone(true);
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+            FCFS_algorithm();
+        }else
+        {
+            RR_algorithm();
         }
-        //TODO: Implement RR here
-        /*Insert RR code here*/
-        if (isRR) {
-            for (int i = 0; i < CPUs->size(); i++)
-            {
-                //gets current cpu in iteration
-                CPUCore* cpu = &CPUs->at(i);
-                //if cpu is not yet running (has not been started yet)
-                if (cpu->get_running() == false && !ReadyQueue->empty())
-                {
-                    cpu->setScheduler(this);
-                    //set the current process of the cpu to the front of the ready queue, also puts back the process that was in the CPU back to the ReadyQueue
-                    cpu->set_curr_process(ReadyQueue->front(), ReadyQueue);
-                    //sets the CPU to running
-                    cpu->set_running(true);
-                    //removes the current process from the readyqueue since it is already in the cpu
-                    ReadyQueue->pop_front();
-                    //starts the CPU thread
-                    cpu->start();
-
-                }
-                else if (cpu->get_running() == true) {
-                    if (cpu->curr_process().getcurrLine() != 0) {
-                        CPUCOUNTER = cpu->curr_process().getcurrLineCounterForRR();
-                    }
-
-                    if (!ReadyQueue->empty())
-                    {
-                        cpu->setdone(false);
-                    }
-
-                    //if there are no more processes in the ready queue, set the CPU to not running
-                    else if (ReadyQueue->empty() && cpu->curr_process().getstatus() == process::FINISHED)
-                    {
-                        if (!cpu->getSentToFinishedVector())
-                        {
-                            FinishedProcess->push_back(cpu->curr_process());
-                            cpu->setSenTtoFinishedVector(true);
-
-                        }
-                        cpu->setdone(true);
-                    }
-
-                    //PRE EMPTED RR ALGO
-                    if (CPUCOUNTER % TimeQuantum == 0 && cpu->getdone() == false) { //if TQ is up
-                        if (cpu->curr_process().getstatus() != process::FINISHED && !ReadyQueue->empty()) { //if process is NOT done
-                            //set curr process on top of Ready Queue, push curr_process back to RQ
-                            cpu->set_curr_process(ReadyQueue->front(), ReadyQueue);
-                            //pop the front of RQ
-                            ReadyQueue->pop_front();
-                        }
-                    }
-
-                    //If current process is sleeping
-                    if (cpu->curr_process().getstatus() == process::SLEEPING && cpu->getdone() == false) {
-                        //push the finished process to the finished processes vector
-                        if (!cpu->getSentToSleepingVector())
-                        {
-                            SleepingProcess->push_back(cpu->curr_process());
-                            cpu->setSentToSleepingVector(true);
-                        }
-                        if (!ReadyQueue->empty()) {
-                            const std::lock_guard<std::mutex> lock(*queuemutex);
-                            //change the process
-                            cpu->set_curr_process(ReadyQueue->front(), ReadyQueue);
-                            //reset value since has not been sent to finished vector
-                            cpu->setSentToSleepingVector(false);
-                            //remove the current process from the ready queue since it is already in the cpu
-                            ReadyQueue->pop_front();
-                        }
-                        else {
-                            //if there are no more processes in the ready queue, set the CPU to not running
-                            if (ReadyQueue->empty() && !cpu->getdone())
-                            {
-                                if (cpu->curr_process().getstatus() == process::SLEEPING)
-                                {
-                                    cpu->setdone(true);
-                                }
-                            }
-                        }
-                    }
-                    //FIFO ALGO
-                    else if (cpu->curr_process().getstatus() == process::FINISHED && cpu->getdone() == false) { //if process is done
-                        //push to Finished Process
-                        if (!cpu->getSentToFinishedVector())
-                        {
-                            FinishedProcess->push_back(cpu->curr_process());
-                            cpu->setSenTtoFinishedVector(true);
-
-                        }
-                        if (!ReadyQueue->empty()) {
-                            cpu->set_curr_process(ReadyQueue->front(), ReadyQueue);
-                            cpu->setSenTtoFinishedVector(false);
-                            ReadyQueue->pop_front();
-                            cpu->setdone(false);
-                        }
-                        else if (ReadyQueue->empty() && cpu->curr_process().getstatus() == process::FINISHED) {
-                            //if there are no more processes in the ready queue, set the CPU to not running
-                            cpu->setdone(true);
-                        }
-                    }
-                }
-            }
-        }
-        CPUticks += 1;
         sleep(TICK_DELAY);
     }
 }
+
+//checks sleeping processes and wakes them up if needed
+void Scheduler::checkSleepingProcesses()
+{
+    for (int i = SleepingProcess->size() - 1; i >= 0; i--) {
+        SleepingProcess->at(i)->setsleeptime(SleepingProcess->at(i)->getsleeptime() + 1);
+        if (SleepingProcess->at(i)->getsleepcounter() == SleepingProcess->at(i)->getsleeptime()) {  // condition
+            //debugging purposes
+            //std::cout << "Sleep is Done! for: " + SleepingProcess[i].getname() + "\n";
+            //reset sleepcounter
+            SleepingProcess->at(i)->setsleeptime(0);
+            SleepingProcess->at(i)->setstatus(process::RUNNING);
+            push_to_ready(SleepingProcess->at(i));
+            SleepingProcess->erase(SleepingProcess->begin() + i);
+        }
+    }
+}
+
+void Scheduler::FCFS_algorithm()
+{
+    for(CPUCore& cpu : *CPUs)
+    {
+        //if cpu is done with the process
+        if (!cpu.get_running())
+        {
+            //getprocessfromqueue takes the latest process the queue pops it, returns null if queue is empty
+            //set_curr_process sets the cpu's current process
+            cpu.set_curr_process(getprocessfromqueue());
+        }
+    }
+}
+
+void Scheduler::RR_algorithm()
+{
+    for(CPUCore& cpu : *CPUs)
+    {
+        //if cpu has reached the time quantum
+        if (cpu.gettimequantum() == TimeQuantum)
+        {
+            //preempts, removes the process in the cpu and moves it back to the ready queue
+            cpu.preempt_curr_process();
+            //sets new process from ready queue
+            cpu.set_curr_process(getprocessfromqueue());
+        }
+        //if cpu is done with the process
+        else if (!cpu.get_running())
+        {
+            cpu.set_curr_process(getprocessfromqueue());
+        }
+    }
+}
+
+//Returns the front process in the queue, otherwise returns a nullptr
+std::shared_ptr<process> Scheduler::getprocessfromqueue()
+{
+    std::lock_guard<std::mutex> lock(*queuemutex);
+    if (!ReadyQueue->empty())
+    {
+        auto proc = ReadyQueue->front();
+        ReadyQueue->pop_front();
+        return proc;
+    }
+    return nullptr;
+}
+
 bool Scheduler::isDelayDone() const
 {
     return CPUticks % Delay == 0;
@@ -272,4 +147,65 @@ bool Scheduler::isDelayDone() const
 int Scheduler::getTick()
 {
     return CPUticks;
+}
+
+std::mutex* Scheduler::getTickMutex()
+{
+    return &this->tickmutex;
+}
+
+void Scheduler::start_work() {
+    std::lock_guard<std::mutex> lock(tickmutex);
+    for(CPUCore& cpu : *CPUs)
+    {
+        cpu.start();
+        cpu.setcv(&this->cv);
+    }
+    ready = true;
+    cv.notify_all();
+}
+
+// Workers wait for start signal
+void Scheduler::wait_for_start() {
+    std::unique_lock<std::mutex> lock(tickmutex);
+    cv.wait(lock, [this] { return ready; });
+}
+
+void Scheduler::wait_for_execute()
+{
+    std::unique_lock<std::mutex> lock(cpumutex);
+    doneCores = 0;
+    lock.unlock();
+    std::mutex mutex;
+    std::unique_lock<std::mutex> lock2(mutex);
+    cv.notify_all();
+    cv.wait(lock2, [this] { return numCores == doneCores; });
+}
+void Scheduler::report_done() {
+    std::unique_lock<std::mutex> lock(cpumutex);
+    doneCores++;
+    if (doneCores == numCores)
+    {
+        cv.notify_all();
+    }
+}
+
+void Scheduler::push_to_ready(std::shared_ptr<process> process)
+{
+    std::lock_guard<std::mutex> lock(*queuemutex);
+    if (process != nullptr)
+    this->ReadyQueue->push_back(process);
+}
+void Scheduler::push_to_sleeping(std::shared_ptr<process> process)
+{
+    std::lock_guard<std::mutex> lock(sleepmutex);
+    if (process != nullptr)
+    this->SleepingProcess->push_back(process);
+}
+
+void Scheduler::push_to_finished(std::shared_ptr<process> process)
+{
+    std::lock_guard<std::mutex> lock(finishmutex);
+    if (process != nullptr)
+    this->FinishedProcess->push_back(process);
 }
