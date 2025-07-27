@@ -117,11 +117,19 @@ void Scheduler::RR_algorithm()
             cpu.preempt_curr_process();
             //sets new process from ready queue
             cpu.set_curr_process(getprocessfromqueue());
+            
+            //TODO: produce text for WEEK 10 here
+            //if(cpu.getStatus() == FINISHED){
+            // Free the memory array 
+            //}
+
         }
         //if cpu is done with the process
         else if (!cpu.get_running())
         {
             cpu.set_curr_process(getprocessfromqueue());
+
+            //TODO: remove this process from memory
         }
     }
 }
