@@ -1,7 +1,7 @@
 //
 // Created by Sean on 17/06/2025.
 //
-#include "Memory.h"
+#include "Memory.cpp"
 #include "CPUCore.h"
 
 CPUCore::CPUCore(int id)
