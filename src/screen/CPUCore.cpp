@@ -1,7 +1,7 @@
 //
 // Created by Sean on 17/06/2025.
 //
-
+#include "Memory.h"
 #include "CPUCore.h"
 
 CPUCore::CPUCore(int id)
@@ -58,12 +58,20 @@ void CPUCore::set_running(bool running)
 }
 void CPUCore::set_curr_process(const std::shared_ptr<process>& curr_process)
 {
+    if (Memory::allocate(curr_process->getID())) {
+        this->currProcess = curr_process;
+        running = true;
+        currProcess->setstatus(process::RUNNING);
+        currProcess->setcore(this->id);
+    } else {
+        // memory full, move to back of ready queue
+        Scheduler::getInstance().push_to_ready(curr_process);
+    }
+
     if (curr_process == nullptr)
     {
         running = false;
-    }
-    else
-    {
+    } else {
         running = true;
         this->currProcess = curr_process;
         currProcess->setstatus(process::RUNNING);
@@ -84,6 +92,9 @@ void CPUCore::remove_curr_process()
     {
         if (currProcess->getstatus() == process::FINISHED)
         {
+            // Free memory before removing
+            Memory::deallocate(currProcess->getID());
+            Memory::printMemoryStatus("PID " + std::to_string(currProcess->getID()) + " finished");
             timequantum = 0;
             running = false;
             Scheduler::getInstance().push_to_finished(currProcess);
@@ -91,6 +102,7 @@ void CPUCore::remove_curr_process()
         }
         else if (currProcess->getstatus() == process::SLEEPING)
         {
+            Memory::deallocate(currProcess->getID());
             timequantum = 0;
             running = false;
             Scheduler::getInstance().push_to_sleeping(currProcess);

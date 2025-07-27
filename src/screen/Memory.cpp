@@ -1,56 +1,79 @@
 #include "Memory.h"
+#include "process.h"
+#include <sstream>
+#include <iomanip>
 
-const int MAX_MEMORY= 16384;
-std::vector<int> MemoryArray(MAX_MEMORY, -1); //creates MAX_MEMORY amount of elements, with -1 as the init value
-const int MEM_PER_FRAME = 16; //idk where to put this
-const int MEM_PER_PROC = 4096;// Memory per frame in bytes
-int ext_frag = 0;
-int numProcesses = 0;
+using namespace MemoryConfig;
 
-Memory process;
+std::vector<int> Memory::memory(TOTAL_FRAMES, -1);
+int Memory::numProcesses = 0;
 
-//Initialization
-//First Fit
-
-void allocate_memory() {
+bool Memory::allocate(int pid) {
 	int freeCount = 0;
-	//check for a free space
-	for (int i: MemoryArray) {
-		//check if it is free
-		if (MemoryArray[i] != -1) {
+	int start = -1;
+
+	for (int i = 0; i < TOTAL_FRAMES; ++i) {
+		if (memory[i] == -1) {
+			if (freeCount == 0) start = i;
+			freeCount++;
+			if (freeCount == FRAMES_PER_PROC) {
+				// Allocate frames
+				for (int j = start; j < start + FRAMES_PER_PROC; ++j)
+					memory[j] = pid;
+				numProcesses++;
+				return true;
+			}
+		} else {
 			freeCount = 0;
 		}
-		else if (MemoryArray[i] == -1) {
-			freeCount++; //start counting the free memory blocks
-			if (freeCount == MEM_PER_PROC) {
-				int start = i;
-				int end = i + freeCount;
-				//TODO: insert the process id here
-			}
+	}
+
+	return false; // not enough contiguous space
+}
+
+void Memory::deallocate(int pid) {
+	bool found = false;
+	for (int& frame : memory) {
+		if (frame == pid) {
+			frame = -1;
+			found = true;
 		}
 	}
+	if (found) numProcesses--;
 }
 
-// has syntax error, but im trying to add the logic here
-void deallocate_memory() {
-	for (int i : MemoryArray) {
-		if (MemoryArray[i].getProcess == process) {
-			MemoryArray[i] = -1;
+void Memory::printMemoryStatus(const std::string& timestamp) {
+	std::ofstream out("memory_tick" + timestamp + ".txt", std::ios::app);
+
+	out << "Timestamp: " << timestamp << '\n';
+	out << "Processes in memory: " << numProcesses << '\n';
+	out << "External Fragmentation: " << getExternalFragmentation() << " KB\n";
+
+	for (int i = 0; i < TOTAL_FRAMES; ++i) {
+		out << (memory[i] == -1 ? '.' : '*');
+		if ((i + 1) % 64 == 0) out << '\n';
+	}
+
+	out << "\n----------------------------------------\n";
+	out.close();
+}
+
+int Memory::getNumProcesses() {
+	return numProcesses;
+}
+
+int Memory::getExternalFragmentation() {
+	int freeBlock = 0, blocks = 0;
+
+	for (int i = 0; i < TOTAL_FRAMES; ++i) {
+		if (memory[i] == -1) {
+			freeBlock++;
+		} else if (freeBlock > 0) {
+			if (freeBlock < FRAMES_PER_PROC) blocks++;
+			freeBlock = 0;
 		}
 	}
+	if (freeBlock > 0 && freeBlock < FRAMES_PER_PROC) blocks++;
+
+	return blocks * MEM_PER_FRAME / 1024; // bytes
 }
-
-
-void print() {
-    std::ofstream memoryReport("memory_stamp.txt", std::ios::trunc);
-
-    if (!memoryReport.is_open()) {
-        std::cerr << "Error: Could not open file for writing!" << std::endl;
-        return;
-    }
-
-    memoryReport << "Timestamp: " + process.executionTime() << std::endl;
-
-    memoryReport.close();
-}
-
