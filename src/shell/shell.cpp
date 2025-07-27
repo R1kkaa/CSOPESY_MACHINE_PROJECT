@@ -34,6 +34,9 @@ void Shell::start(){
     bool isRR = false;
     uint64_t minLines = 5;
     uint64_t maxLines = 20;
+    uint64_t maxOverallMem = 0;
+    uint64_t memPerFrame = 0;
+    uint64_t memPerProc = 0;
 
     //generate CPUs
     CPUs = generateCPUs(4);
@@ -71,6 +74,9 @@ void Shell::start(){
                 maxLines = stoi(config["max-ins"]);
                 minLines = stoi(config["min-ins"]);
                 TimeQuantum = stoi(config["quantum-cycles"]);
+                maxOverallMem = stoi(config["max-overall-mem"]);
+                memPerFrame = stoi(config["mem-per-frame"]);
+                memPerProc = stoi(config["mem-per-proc"]);
                 if (config["scheduler"]=="\"rr\"")
                 {
                     Scheduler::getInstance().setRR(true);
@@ -268,7 +274,7 @@ std::shared_ptr<process>* Shell::findsession(std::vector<CPUCore>& CPUs, std::de
     //check cpu cores
     for (auto& i : CPUs)
     {
-        if (i.currProcess->getname() == name)
+        if (i.currProcess != nullptr && i.currProcess->getname() == name)
         {
             return &i.currProcess;
         }
