@@ -67,7 +67,7 @@ void Shell::start(){
             }
             else if (userInput[0] == "initialize" && !initialized) {
                 std::cout << userInput[0] << " command recognized." << std::endl;
-                auto config = readConfigFile("D:\\CSOPESY_MACHINE_PROJECT\\src\\shell\\config.txt");
+                auto config = readConfigFile("config.txt");
                 CPUs = generateCPUs(stoi(config["num-cpu"]));
                 Delay = stoi(config["delay-per-exec"]);
                 BatchDelay = stoi(config["batch-process-freq"]);
