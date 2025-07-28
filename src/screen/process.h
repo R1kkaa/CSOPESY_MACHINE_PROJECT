@@ -48,7 +48,12 @@ public:
     std::shared_ptr<int> getsleepcounterPtr();
     int getsleeptime();
     void setsleeptime(int sleeptime);
-
+    void setMemoryAllocated(bool allocated);
+    bool isMemoryAllocated() const;
+    void setMemoryStartFrame(int frameIndex);
+    int getMemoryStartFrame() const;
+    void setMemoryRequired(int memBytes);
+    int getMemoryRequired() const;
 
 private:
     std::string name;
@@ -66,7 +71,9 @@ private:
     std::shared_ptr<int> sleepcounter;
     int sleeptime = 0;
     std::shared_ptr<std::unordered_map<std::string, uint16_t>> varList;
-
+    bool memoryAllocated = false;
+    int memoryStartFrame = -1;
+    int memoryRequired = 4096;
 
 };
 #endif //PROCESS_H
