@@ -3,7 +3,7 @@
 //
 
 #include "CPUCore.h"
-
+Memory memory;
 CPUCore::CPUCore(int id)
 {
     this->id = id;
@@ -68,6 +68,7 @@ void CPUCore::set_curr_process(const std::shared_ptr<process>& curr_process)
         this->currProcess = curr_process;
         currProcess->setstatus(process::RUNNING);
         currProcess->setcore(this->id);
+        
     }
 }
 void CPUCore::preempt_curr_process()
@@ -87,6 +88,7 @@ void CPUCore::remove_curr_process()
             timequantum = 0;
             running = false;
             Scheduler::getInstance().push_to_finished(currProcess);
+            memory.deallocate_memory(currProcess->getID());;//remove from memory
             this->currProcess = nullptr;
         }
         else if (currProcess->getstatus() == process::SLEEPING)

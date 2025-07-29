@@ -9,9 +9,11 @@
 #include "CPUCore.h"
 #include "process.h"
 #include "Thread.h"
+#include "Memory.h"
 #include <condition_variable>
 
 class CPUCore;
+
 
 class Scheduler: public Thread{
     std::deque<std::shared_ptr<process>>* ReadyQueue;
@@ -23,6 +25,7 @@ class Scheduler: public Thread{
     bool isRR = false;
     std::mutex* queuemutex;
     std::vector<std::shared_ptr<process>>* SleepingProcess;
+    std::shared_ptr<std::vector<int>> MemoryArray;
     std::condition_variable cv;
     std::mutex tickmutex;
     std::mutex finishmutex;

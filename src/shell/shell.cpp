@@ -16,6 +16,7 @@
 #include "../screen/CPUCore.h"
 #include "../screen/PrintCommand.h"
 #include "../screen/Scheduler.h"
+#include "../screen/Memory.h"
 
 //TODO: Read config file first and implement "initialize command" (We can do this last)
 
@@ -27,6 +28,7 @@ void Shell::start(){
     //TODO: Implement the scheduler and put the finished processes in this vector
     std::vector<std::shared_ptr<process>> finishedprocesses;
     std::vector<std::shared_ptr<process>> sleepingprocesses;
+    std::shared_ptr<std::vector<int>> MemoryArray; // stores PID or -1
     std::mutex deque_mutex;
     uint64_t Delay = 0;
     uint64_t BatchDelay = 1;
@@ -34,9 +36,9 @@ void Shell::start(){
     bool isRR = false;
     uint64_t minLines = 5;
     uint64_t maxLines = 20;
-    uint64_t maxOverallMem = 0;
-    uint64_t memPerFrame = 0;
-    uint64_t memPerProc = 0;
+    uint64_t maxOverallMem = 16384;
+    uint64_t memPerFrame = 16;
+    uint64_t memPerProc = 4096;
 
     //generate CPUs
     CPUs = generateCPUs(4);
@@ -46,6 +48,9 @@ void Shell::start(){
 
     //start CPU ticks
     generateprocess generateprocess(BatchDelay, &processes, &Scheduler::getInstance(), &deque_mutex, maxLines, minLines);
+
+    //initialize memory
+	Memory memory(maxOverallMem, memPerFrame, memPerProc);
 
     //start scheduler and tick counts (currently CPU Ticks does not do anything)
     //scheduler is the one that starts the CPU threads, check scheduler.cpp for more information
@@ -89,7 +94,7 @@ void Shell::start(){
                 Scheduler::getInstance().set_delay(Delay+1);
                 Scheduler::getInstance().setTimeQuantum(TimeQuantum);
                 generateprocess.set_delay(BatchDelay);
-                generateprocess.set_maxsize(maxLines);
+                generateprocess.set_maxsize(maxLines); 
                 generateprocess.set_minsize(minLines);
                 Scheduler::getInstance().start();
                 generateprocess.start();
@@ -184,6 +189,19 @@ void Shell::start(){
                         if (process != nullptr)
                             std::cout << process->getname() << "   " + process->displayTimestamp() + "    STATUS: FINISHED     " + std::to_string(process->getcurrLine()) + "/" + std::to_string(process->getmaxLine()) << std::endl;
                     }
+                    int countMemory = 0;
+                    std::cout << "\nMemory Array:" << std::endl;
+                    std::cout << "----------------------------------" << std::endl;
+                    for (int i : *(memory.MemoryArray)) {
+                        std::cout << i << std::endl;
+                        countMemory++;
+                    }
+                    std::cout << "Count:" << countMemory << std::endl;
+                    std::cout << "Overall Memory Size:" << memory.getMemorySize() << std::endl;
+                    std::cout << "Frame Size:" << memory.getFrameSize() << std::endl;
+                    std::cout << "MemorySufficient?:" << memory.isSufficient() << std::endl;
+
+
                     try {
                         std::vector<std::string> userInput = Util::readInput();
                         userInput.at(0);

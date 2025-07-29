@@ -108,28 +108,26 @@ void Scheduler::FCFS_algorithm()
 
 void Scheduler::RR_algorithm()
 {
+    Memory memory;
     for(CPUCore& cpu : *CPUs)
     {
         //if cpu has reached the time quantum
         if (cpu.gettimequantum() == TimeQuantum)
         {
+           // memory.printMemoryStatus(std::to_string(TimeQuantum));
             //preempts, removes the process in the cpu and moves it back to the ready queue
             cpu.preempt_curr_process();
-            //sets new process from ready queue
-            cpu.set_curr_process(getprocessfromqueue());
-            
-            //TODO: produce text for WEEK 10 here
-            //if(cpu.getStatus() == FINISHED){
-            // Free the memory array 
-            //}
 
+            //if space is sufficent, we set the next process
+            if (memory.isSufficient() != -1) {
+                cpu.set_curr_process(getprocessfromqueue());
+                memory.allocate_memory(cpu.currProcess->getID(), memory.isSufficient());
+            }
         }
-        //if cpu is done with the process
+        //if cpu is done with the process or if no process is set
         else if (!cpu.get_running())
         {
             cpu.set_curr_process(getprocessfromqueue());
-
-            //TODO: remove this process from memory
         }
     }
 }
@@ -167,6 +165,7 @@ void Scheduler::start_work() {
     for(CPUCore& cpu : *CPUs)
     {
         cpu.start();
+        //memory.start();
         cpu.setcv(&this->cv);
     }
     ready = true;

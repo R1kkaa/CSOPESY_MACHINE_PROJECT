@@ -6,9 +6,11 @@
 #define CPUCORE_H
 #include "Scheduler.h"
 #include "process.h"
+#include "Memory.h"
 #include <condition_variable>
 
 class Scheduler;
+
 
 class CPUCore: public Thread {
 public:

@@ -32,7 +32,7 @@ void generateprocess::run()
     while (true)
     {
         auto schedtick = Scheduler::getInstance().getTick();
-        if (createprocess && schedtick%Delay==0 && currtick < schedtick)
+        if (createprocess && schedtick%Delay==0 && currtick < schedtick && processcount <= 10)
         {
             currtick = schedtick;
             process newprocess = generatedummyprocess("process_"+std::to_string(processcount), minsize, maxsize);

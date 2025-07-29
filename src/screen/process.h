@@ -48,6 +48,8 @@ public:
     std::shared_ptr<int> getsleepcounterPtr();
     int getsleeptime();
     void setsleeptime(int sleeptime);
+    bool getinMemory();
+    void setinMemory(bool inMemory);
 
 
 private:
@@ -66,6 +68,7 @@ private:
     std::shared_ptr<int> sleepcounter;
     int sleeptime = 0;
     std::shared_ptr<std::unordered_map<std::string, uint16_t>> varList;
+    bool inMemory = 0; //if it is in memory
 
 
 };

@@ -163,6 +163,16 @@ int process::getcurrLine() const
     return this->currLine;
 }
 
+bool process::getinMemory()
+{
+    return this->inMemory;
+}
+
+void process::setinMemory(bool inMemory)
+{
+    this->inMemory = inMemory;
+}
+
 int process::getcurrLineCounterForRR() const
 {
     return this->currLineCounterForRR;
