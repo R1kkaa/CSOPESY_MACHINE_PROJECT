@@ -12,8 +12,10 @@ Memory::Memory() {
 }
 
 Memory::Memory(int maxOverallMem, int memPerFrame, int memPerProc)
-	: maxOverallMem(maxOverallMem), memPerFrame(memPerFrame), memPerProc(memPerProc)
 {
+	this->maxOverallMem = maxOverallMem;
+	this->memPerFrame = memPerFrame;
+	this->memPerProc = memPerProc;
 	TOTAL_FRAMES = maxOverallMem / memPerFrame;
 	MemoryArray = std::make_shared<std::vector<int>>(TOTAL_FRAMES, -1);
 }
@@ -31,8 +33,8 @@ int Memory::isSufficient() {
 			}
 			freeCount++;
 
-			if (freeCount == TOTAL_FRAMES) {
-				return start;  // found enough space
+			if (freeCount == (memPerProc / memPerFrame)) {
+				return freeCount;  // found enough space
 			}
 		}
 	}
@@ -40,9 +42,8 @@ int Memory::isSufficient() {
 }
 
 void Memory::allocate_memory(int currProcess, int start) {
-	int inMemory = Memory::checkExisting(currProcess); //check if currProcess exists inside the memory before allocating the memory
-	std::cout << "Allocating for PID " << currProcess << " at index " << start << std::endl;
-	if (inMemory != 1 && start >= 0) {
+	bool inMemory = Memory::isInMemory(currProcess); //check if currProcess exists inside the memory before allocating the memory
+	if (!inMemory && start >= 0) {
 		for (int i = start; i < start + (memPerProc/memPerFrame); ++i) { //populate the memory with the id number of the process
 			MemoryArray->at(i) = currProcess;
 		}
@@ -58,18 +59,14 @@ void Memory::deallocate_memory(int currProcess) {
 			found = true;
 		}
 	}
-	if (found)  
-		if (numProcesses > 0) {
-			numProcesses--;
-		}
+	if (found && numProcesses > 0)
+		numProcesses--;
 }
 
 //if process is inside memory already
-int Memory::checkExisting(int currProcess) {
-	bool found = false;
+bool Memory::isInMemory(int currProcess) {
 	for (int& frame : *MemoryArray) {
 		if (frame == currProcess) {
-			frame = -1;
 			return 1;
 		}
 	}

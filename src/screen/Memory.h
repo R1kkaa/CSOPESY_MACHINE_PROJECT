@@ -24,7 +24,7 @@ public:
     void allocate_memory(int pid, int start);
     void deallocate_memory(int pid);
     void printMemoryStatus(const std::string& timestamp);
-    int checkExisting(int pid);
+    bool isInMemory(int pid);
     int isSufficient();
     void checkArray();
 

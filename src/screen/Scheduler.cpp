@@ -114,25 +114,14 @@ void Scheduler::RR_algorithm()
     {
         //if cpu has reached the time quantum
         if (cpu.gettimequantum() == TimeQuantum)
-        {
-           // memory.printMemoryStatus(std::to_string(TimeQuantum));
-            //preempts, removes the process in the cpu and moves it back to the ready queue
-            
-            
-            //always preempt
+        { 
+           //always preempt
             cpu.preempt_curr_process();
             auto nextProcess = getprocessfromqueue();
             if (nextProcess) {
                 memoryPtr->allocate_memory(nextProcess->getID(), 0);
                 cpu.set_curr_process(nextProcess);
             }
-            //if space is sufficent, we set the next process
-            /*int startIndex = memoryPtr->isSufficient();
-            if (startIndex != -1) {
-                if (nextProcess) {
-                    cpu.set_curr_process(nextProcess);
-                }
-            }*/
         }
         //if cpu is done with the process or if no process is set
         else if (!cpu.get_running())
@@ -140,7 +129,9 @@ void Scheduler::RR_algorithm()
             auto nextProcess = getprocessfromqueue();
             int startIndex = memoryPtr->isSufficient();
             if (nextProcess) {
-                memoryPtr->allocate_memory(nextProcess->getID(), 0);
+                if (startIndex) {
+                    memoryPtr->allocate_memory(nextProcess->getID(), 0);
+                }
                 cpu.set_curr_process(nextProcess);
             }
         }
