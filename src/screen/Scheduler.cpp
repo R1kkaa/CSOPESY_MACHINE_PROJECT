@@ -12,7 +12,7 @@ std::once_flag Scheduler::initialized;
 Scheduler::Scheduler() {
 }
 
-Scheduler::Scheduler(uint64_t TimeQuantum, uint64_t Delay, std::deque<std::shared_ptr<process>>* ReadyQueue, std::vector<std::shared_ptr<process>>* FinishedProcess, std::vector<std::shared_ptr<process>>* SleepingProcess, bool isRR, std::vector<CPUCore>* CPUs, std::mutex* queuemutex)
+Scheduler::Scheduler(uint64_t TimeQuantum, uint64_t Delay, std::deque<std::shared_ptr<process>>* ReadyQueue, std::vector<std::shared_ptr<process>>* FinishedProcess, std::vector<std::shared_ptr<process>>* SleepingProcess, std::shared_ptr<Memory> memoryPtr, bool isRR, std::vector<CPUCore>* CPUs, std::mutex* queuemutex)
 {
 	this->FinishedProcess = FinishedProcess;
     this->ReadyQueue = ReadyQueue;
@@ -24,16 +24,18 @@ Scheduler::Scheduler(uint64_t TimeQuantum, uint64_t Delay, std::deque<std::share
     this->SleepingProcess = SleepingProcess;
     this->TimeQuantum = TimeQuantum;
     this->numCores = CPUs->size();
+    this->memoryPtr = memoryPtr;
 }
 
 Scheduler& Scheduler::getInstance(uint64_t TimeQuantum, uint64_t Delay,
     std::deque<std::shared_ptr<process>>* ReadyQueue, std::vector<std::shared_ptr<process>>* FinishedProcess,
-    std::vector<std::shared_ptr<process>>* SleepingProcess, bool isRR, std::vector<CPUCore>* CPUs,
+    std::vector<std::shared_ptr<process>>* SleepingProcess, std::shared_ptr<Memory> memoryPtr, bool isRR, std::vector<CPUCore>* CPUs,
     std::mutex* queuemutex)
 {
     std::call_once(Scheduler::initialized, [&]() {
     Scheduler::instance = std::unique_ptr<Scheduler>(new Scheduler(TimeQuantum, Delay, ReadyQueue,
                                                                    FinishedProcess, SleepingProcess,
+                                                                   memoryPtr,
                                                                    isRR, CPUs, queuemutex));
 });
     return *Scheduler::instance;
@@ -108,7 +110,6 @@ void Scheduler::FCFS_algorithm()
 
 void Scheduler::RR_algorithm()
 {
-    Memory memory;
     for(CPUCore& cpu : *CPUs)
     {
         //if cpu has reached the time quantum
@@ -116,18 +117,32 @@ void Scheduler::RR_algorithm()
         {
            // memory.printMemoryStatus(std::to_string(TimeQuantum));
             //preempts, removes the process in the cpu and moves it back to the ready queue
+            
+            
+            //always preempt
             cpu.preempt_curr_process();
-
-            //if space is sufficent, we set the next process
-            if (memory.isSufficient() != -1) {
-                cpu.set_curr_process(getprocessfromqueue());
-                memory.allocate_memory(cpu.currProcess->getID(), memory.isSufficient());
+            auto nextProcess = getprocessfromqueue();
+            if (nextProcess) {
+                memoryPtr->allocate_memory(nextProcess->getID(), 0);
+                cpu.set_curr_process(nextProcess);
             }
+            //if space is sufficent, we set the next process
+            /*int startIndex = memoryPtr->isSufficient();
+            if (startIndex != -1) {
+                if (nextProcess) {
+                    cpu.set_curr_process(nextProcess);
+                }
+            }*/
         }
         //if cpu is done with the process or if no process is set
         else if (!cpu.get_running())
         {
-            cpu.set_curr_process(getprocessfromqueue());
+            auto nextProcess = getprocessfromqueue();
+            int startIndex = memoryPtr->isSufficient();
+            if (nextProcess) {
+                memoryPtr->allocate_memory(nextProcess->getID(), 0);
+                cpu.set_curr_process(nextProcess);
+            }
         }
     }
 }
@@ -165,7 +180,6 @@ void Scheduler::start_work() {
     for(CPUCore& cpu : *CPUs)
     {
         cpu.start();
-        //memory.start();
         cpu.setcv(&this->cv);
     }
     ready = true;

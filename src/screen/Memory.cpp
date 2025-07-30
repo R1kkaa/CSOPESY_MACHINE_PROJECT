@@ -6,7 +6,6 @@
 ////const int TOTAL_FRAMES = MAX_MEMORY / MEM_PER_FRAME;
 int TOTAL_FRAMES;
 int ext_frag = 0;
-int numProcesses = 0;
 
 Memory::Memory() {
 
@@ -22,14 +21,13 @@ Memory::Memory(int maxOverallMem, int memPerFrame, int memPerProc)
 int Memory::isSufficient() {
 	int freeCount = 0;
 	int start = -1;
-
-	for (int i : *(MemoryArray)) {
-		if (i != -1) {
+	for (int i = 0; i < MemoryArray->size(); ++i) {
+		if (MemoryArray->at(i) != -1) {
 			freeCount = 0;  // reset count
 		}
-		else if (i == -1) {
+		else {
 			if (freeCount == 0) {
-				start = i;  // mark potential start index
+				start = i;  // mark potential start index correctly
 			}
 			freeCount++;
 
@@ -43,13 +41,11 @@ int Memory::isSufficient() {
 
 void Memory::allocate_memory(int currProcess, int start) {
 	int inMemory = Memory::checkExisting(currProcess); //check if currProcess exists inside the memory before allocating the memory
-	if (inMemory == 1) {
-		int start = Memory::isSufficient();
-
-		for (int i = start; i <= start + memPerProc; ++i) { //populate the memory with the id number of the process
-			(*MemoryArray)[i] = currProcess;
+	std::cout << "Allocating for PID " << currProcess << " at index " << start << std::endl;
+	if (inMemory != 1 && start >= 0) {
+		for (int i = start; i < start + (memPerProc/memPerFrame); ++i) { //populate the memory with the id number of the process
+			MemoryArray->at(i) = currProcess;
 		}
-
 		numProcesses++;
 	}
 }
@@ -68,7 +64,7 @@ void Memory::deallocate_memory(int currProcess) {
 		}
 }
 
-//if P1 is inside memory already
+//if process is inside memory already
 int Memory::checkExisting(int currProcess) {
 	bool found = false;
 	for (int& frame : *MemoryArray) {
@@ -113,10 +109,40 @@ int Memory::getExternalFragmentation() {
 	return ext_frag;
 }
 
+void Memory::checkArray() {
+	for (int i : *MemoryArray) {
+		std::cout << i << std::endl;
+	}
+}
+
 int Memory::getFrameSize() const {
 	return memPerFrame;
+}
+
+void Memory::setFrameSize(int memPerFrame){
+	this->memPerFrame = memPerFrame;
 }
 
 int Memory::getMemorySize() const {
 	return maxOverallMem;
 }
+
+void Memory::setMemorySize(int maxOverallMem) {
+	this->maxOverallMem = maxOverallMem;
+}
+
+int Memory::getProcSize() const {
+	return memPerProc;
+}
+
+void Memory::setProcSize(int memPerProc) {
+	this->memPerProc = memPerProc;
+}
+
+int Memory::getNumProcesses() const {
+	return numProcesses;
+}
+std::shared_ptr<std::vector<int>> Memory::getMemoryArray() {
+	return MemoryArray;
+}
+

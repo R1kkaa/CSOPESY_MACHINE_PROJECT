@@ -14,6 +14,7 @@
 
 class CPUCore;
 
+class Memory;
 
 class Scheduler: public Thread{
     std::deque<std::shared_ptr<process>>* ReadyQueue;
@@ -47,13 +48,14 @@ class Scheduler: public Thread{
 
     Scheduler(uint64_t TimeQuantum, uint64_t Delay, std::deque<std::shared_ptr<process>>* ReadyQueue,
       std::vector<std::shared_ptr<process>>* FinishedProcess,
-      std::vector<std::shared_ptr<process>>* SleepingProcess, bool isRR, std::vector<CPUCore>* CPUs,
+      std::vector<std::shared_ptr<process>>* SleepingProcess, std::shared_ptr<Memory> memoryPtr, bool isRR, std::vector<CPUCore>* CPUs,
       std::mutex* queuemutex);
 
     static Scheduler& getInstance(uint64_t TimeQuantum, uint64_t Delay,
                               std::deque<std::shared_ptr<process>>* ReadyQueue,
                               std::vector<std::shared_ptr<process>>* FinishedProcess,
                               std::vector<std::shared_ptr<process>>* SleepingProcess,
+                              std::shared_ptr<Memory> memoryPtr,
                               bool isRR, std::vector<CPUCore>* CPUs,
                               std::mutex* queuemutex);
     static Scheduler& getInstance();
@@ -73,6 +75,7 @@ class Scheduler: public Thread{
     void FCFS_algorithm();
     void RR_algorithm();
     std::shared_ptr<process> getprocessfromqueue();
+    std::shared_ptr<Memory> memoryPtr;
 
     [[nodiscard]] std::vector<CPUCore>* get_cpus() const
     {
