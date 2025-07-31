@@ -44,7 +44,6 @@ void Shell::start(){
 
     //initialize memory
     auto memoryPtr = std::make_shared<Memory>(maxOverallMem, memPerFrame, memPerProc);
-    
     //Memory memManager(maxOverallMem, memPerFrame, memPerProc, memoryPtr);
     
     //initialize scheduler

@@ -2,6 +2,7 @@ set(CMAKE_CXX_STANDARD 20)
 cmake_minimum_required(VERSION 3.31)
 project(CSOPESY_OS)
 
+set(SOURCE_FILES main.cpp)
 add_executable(CSOPESY_OS main.cpp
         src/shell/shell.cpp
         src/shell/shell.h
@@ -30,4 +31,6 @@ add_executable(CSOPESY_OS main.cpp
         src/screen/AddCommand.cpp
         src/screen/AddCommand.h
         src/screen/SubCommand.cpp
-        src/screen/SubCommand.h)
+        src/screen/SubCommand.h
+        src/screen/Memory.cpp
+        src/screen/Memory.h)

@@ -23,7 +23,7 @@ public:
 
     void allocate_memory(int pid, int start);
     void deallocate_memory(int pid);
-    void printMemoryStatus(const std::string& timestamp);
+    void printMemoryStatus(const std::string& timequantum);
     bool isInMemory(int pid);
     int isSufficient();
     void checkArray();
@@ -34,6 +34,7 @@ public:
     int getNumProcesses() const;
     int getExternalFragmentation();
     std::shared_ptr<std::vector<int>> getMemoryArray();
+    std::string displayTimestamp() const;
 
     void setFrameSize(int memPerFrame);
     void setProcSize(int memPerProc);
