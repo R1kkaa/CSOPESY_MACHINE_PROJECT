@@ -113,8 +113,11 @@ void Memory::printMemoryStatus(const std::string& timequantum) {
 
 			//set upper limit
 			int upperLimit = (end+1) * memPerFrame; //ex: 3 * 16 = 48 bytes
+			int lowerLimit = 0; //initialize lower limit
 			//set lower limit
-			int lowerLimit = start * memPerFrame; //ex: 2 * 16 = 32 bytes
+			if (start != 0) {
+				lowerLimit = (start * memPerFrame) - (memPerFrame - 1); //ex: 2 * 16 = 32 bytes
+			}
 
 			//print report
 			memoryReport << lowerLimit << '\n'; //ex: 2 * 16 = 32 bytes

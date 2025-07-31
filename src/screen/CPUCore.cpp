@@ -88,7 +88,7 @@ void CPUCore::remove_curr_process()
             timequantum = 0;
             running = false;
             Scheduler::getInstance().push_to_finished(currProcess);
-            //memory.deallocate_memory(currProcess->getID());;//remove from memory
+
             this->currProcess = nullptr;
         }
         else if (currProcess->getstatus() == process::SLEEPING)

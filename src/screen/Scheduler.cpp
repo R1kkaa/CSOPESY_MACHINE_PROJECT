@@ -65,10 +65,6 @@ void Scheduler::run()
         //wait for all processes to execute
         CPUticks += 1;
 
-        if (CPUticks % TimeQuantum == 0) {
-            Memory::printMemoryStatus(std::to_string(CPUticks));
-        }
-
         wait_for_execute();
         //checks all the sleeping process if they should be woken up
         checkSleepingProcesses();
@@ -121,26 +117,56 @@ void Scheduler::RR_algorithm()
         //if cpu has reached the time quantum
         if (cpu.gettimequantum() == TimeQuantum)
         {
-            memoryPtr->printMemoryStatus(std::to_string(cpu.gettimequantum()));
+            memoryPtr->printMemoryStatus(std::to_string(CPUticks));
            //always preempt
             cpu.preempt_curr_process();
             auto nextProcess = getprocessfromqueue();
             if (nextProcess) {
-                int startIndex = memoryPtr->isSufficient();
-                memoryPtr->allocate_memory(nextProcess->getID(), startIndex);
-                cpu.set_curr_process(nextProcess);
+                //if next process is in memory, then set cpu process
+                if (memoryPtr->isInMemory(nextProcess->getID()))
+                {
+                    cpu.set_curr_process(nextProcess);
+                }
+                //if next process is not in memory, attempt to put in memory
+                else
+                {
+                    int startIndex = memoryPtr->isSufficient();
+                    if (startIndex >= 0)
+                    {
+                        memoryPtr->allocate_memory(nextProcess->getID(), startIndex);
+                        cpu.set_curr_process(nextProcess);
+                    }
+                    else
+                    {
+                        push_to_ready(nextProcess);
+                    }
+                }
             }
         }
         //if cpu is done with the process or if no process is set
         else if (!cpu.get_running())
         {
             auto nextProcess = getprocessfromqueue();
-            int startIndex = memoryPtr->isSufficient();
             if (nextProcess) {
-                if (startIndex) {
-                    memoryPtr->allocate_memory(nextProcess->getID(), startIndex);
+                //if next process is in memory, then set cpu process
+                if (memoryPtr->isInMemory(nextProcess->getID()))
+                {
+                    cpu.set_curr_process(nextProcess);
                 }
-                cpu.set_curr_process(nextProcess);
+                //if next process is not in memory, attempt to put in memory
+                else
+                {
+                    int startIndex = memoryPtr->isSufficient();
+                    if (startIndex >= 0)
+                    {
+                        memoryPtr->allocate_memory(nextProcess->getID(), startIndex);
+                        cpu.set_curr_process(nextProcess);
+                    }
+                    else
+                    {
+                        push_to_ready(nextProcess);
+                    }
+                }
             }
         }
     }
@@ -228,4 +254,5 @@ void Scheduler::push_to_finished(std::shared_ptr<process> process)
     std::lock_guard<std::mutex> lock(finishmutex);
     if (process != nullptr)
     this->FinishedProcess->push_back(process);
+    memoryPtr->deallocate_memory(process->getID());
 }

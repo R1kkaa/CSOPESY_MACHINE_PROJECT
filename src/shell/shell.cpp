@@ -151,7 +151,7 @@ void Shell::start(){
                     system("pause");
                 }
             }
-
+            //TODO: Change the screen -ls command to a function within scheduler-start to retrieve the processes, otherwise race conditions and mutex violations occur which breaks/stops the code
             else if (userInput[0] == "screen" && userInput[1] == "-ls" && initialized) {
                 bool run = true;
                 while (run){
@@ -199,15 +199,19 @@ void Shell::start(){
                     int countMemory = 0;
                     std::cout << "\nMemory Array:" << std::endl;
                     std::cout << "----------------------------------" << std::endl;
-                    for (int i : *(memoryPtr)->getMemoryArray()) {
-                        std::cout << i << std::endl;
-                        countMemory++;
-                    }
                     std::cout << "Count:" << countMemory << std::endl;
                     std::cout << "Overall Memory Size:" << memoryPtr->getMemorySize() << std::endl;
                     std::cout << "Process Size:" << memoryPtr->getProcSize() << std::endl;
                     std::cout << "Frame Size:" << memoryPtr->getFrameSize() << std::endl;
-                    std::cout << "MemorySufficient?:" << memoryPtr->isSufficient() << std::endl;
+                    std::cout << "Memory Sufficient?:";
+                    if (memoryPtr->isSufficient() == -1)
+                    {
+                        std::cout << "No sufficient memory available." << std::endl;
+                    }
+                    else
+                    {
+                        std::cout << "Sufficient memory available." << std::endl;
+                    }
                     std::cout << "numProcesses:" << memoryPtr->getNumProcesses() << std::endl;
                     std::cout << "Ext Frag:" << memoryPtr->getExternalFragmentation() << std::endl;
                     try {
