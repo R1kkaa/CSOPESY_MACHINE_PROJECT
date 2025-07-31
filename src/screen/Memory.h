@@ -7,7 +7,7 @@
 #include <fstream>
 #include <sstream>
 #include <iomanip>
-
+#include <chrono>
 class Memory {
 
 private:
@@ -16,6 +16,7 @@ private:
     int memPerProc;
     std::shared_ptr<std::vector<int>> MemoryArray; // stores PID or -1
     int numProcesses = 0;
+    std::chrono::system_clock::time_point creationTimeMemory;
 
 public:
     Memory();
@@ -27,6 +28,7 @@ public:
     bool isInMemory(int pid);
     int isSufficient();
     void checkArray();
+    std::string displayTimestamp() const;
 
     int getFrameSize() const;
     int getProcSize() const;
