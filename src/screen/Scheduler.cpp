@@ -3,8 +3,9 @@
 //
 
 #include "Scheduler.h"
-
 #include <algorithm>
+#include "Memory.h"
+
 int TICK_DELAY = 10;
 std::unique_ptr<Scheduler> Scheduler::instance = nullptr;
 std::once_flag Scheduler::initialized;
@@ -63,6 +64,11 @@ void Scheduler::run()
     {
         //wait for all processes to execute
         CPUticks += 1;
+
+        if (CPUticks % TimeQuantum == 0) {
+            Memory::printMemoryStatus(std::to_string(CPUticks));
+        }
+
         wait_for_execute();
         //checks all the sleeping process if they should be woken up
         checkSleepingProcesses();

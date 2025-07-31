@@ -206,3 +206,27 @@ std::shared_ptr<int> process::getsleepcounterPtr()
 {
     return sleepcounter;
 }
+
+void process::setMemoryAllocated(bool allocated) {
+    memoryAllocated = allocated;
+}
+
+bool process::isMemoryAllocated() const {
+    return memoryAllocated;
+}
+
+void process::setMemoryStartFrame(int frameIndex) {
+    memoryStartFrame = frameIndex;
+}
+
+int process::getMemoryStartFrame() const {
+    return memoryStartFrame;
+}
+
+void process::setMemoryRequired(int memBytes) {
+    memoryRequired = memBytes;
+}
+
+int process::getMemoryRequired() const {
+    return memoryRequired;
+}

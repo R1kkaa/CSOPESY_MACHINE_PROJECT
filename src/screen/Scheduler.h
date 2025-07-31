@@ -11,6 +11,7 @@
 #include "Thread.h"
 #include "Memory.h"
 #include <condition_variable>
+#include <unordered_set>
 
 class CPUCore;
 
@@ -35,6 +36,7 @@ class Scheduler: public Thread{
     bool ready = false;
     int numCores = 0;
     int doneCores = 0;
+    std::unordered_set<int> allocatedPIDs;
 
     Scheduler();  // Public constructor
 
