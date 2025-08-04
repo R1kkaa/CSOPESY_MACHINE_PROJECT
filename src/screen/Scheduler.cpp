@@ -228,7 +228,7 @@ void Scheduler::print_ready()
     std::lock_guard<std::mutex> lock(*queuemutex);
     for (const auto& process : *ReadyQueue) {
         if (process != nullptr)
-            std::cout << process->getname() << "   " + process->displayTimestamp() + "    STATUS: READY     " + std::to_string(process->getcurrLine()) + "/" + std::to_string(process->getmaxLine()) << std::endl;
+            std::cout << std::left << std::setw(12) << process->getname() << "   " + process->displayTimestamp() + "    STATUS: READY     " + std::to_string(process->getcurrLine()) + "/" + std::to_string(process->getmaxLine()) << std::endl;
     }
 }
 
@@ -237,7 +237,7 @@ void Scheduler::print_sleeping()
     std::lock_guard<std::mutex> lock(sleepmutex);
     for (const auto& process : *SleepingProcess) {
         if (process != nullptr)
-            std::cout << process->getname() << "   " + process->displayTimestamp() + "    STATUS: SLEEPING     " + std::to_string(process->getcurrLine()) + "/" + std::to_string(process->getmaxLine()) << std::endl;
+            std::cout << std::left << std::setw(12) << process->getname() << "   " + process->displayTimestamp() + "    STATUS: SLEEPING     " + std::to_string(process->getcurrLine()) + "/" + std::to_string(process->getmaxLine()) << std::endl;
     }
 }
 
@@ -246,7 +246,7 @@ void Scheduler::print_finished()
     std::lock_guard<std::mutex> lock(finishmutex);
     for (const auto& process : *FinishedProcess) {
         if (process != nullptr)
-            std::cout << process->getname() << "   " + process->displayTimestamp() + "    STATUS: FINISHED     " + std::to_string(process->getcurrLine()) + "/" + std::to_string(process->getmaxLine()) << std::endl;
+            std::cout << std::left << std::setw(12) << process->getname() << "   " + process->displayTimestamp() + "    STATUS: FINISHED     " + std::to_string(process->getcurrLine()) + "/" + std::to_string(process->getmaxLine()) << std::endl;
     }
 }
 
@@ -255,7 +255,37 @@ void Scheduler::print_destroyed()
     std::lock_guard<std::mutex> lock(destroymutex);
     for (const auto& process : DestroyedProcess) {
         if (process != nullptr)
-            std::cout << process->getname() << "   " + process->displayTimestamp() + "    STATUS: DESTROYED     " <<std::endl;
+            std::cout << std::left << std::setw(12) << process->getname() << "   " + process->displayTimestamp() + "    STATUS: DESTROYED     " <<std::endl;
+    }
+}
+
+void Scheduler::print_memory_ready()
+{
+    std::lock_guard<std::mutex> lock(*queuemutex);
+    for (const auto& process : *ReadyQueue) {
+        if (process != nullptr)
+        {
+            auto memory = MemoryManager::getInstance().getMemoryUsage(process->getID());
+            if (memory > 0 )
+            {
+                std::cout << std::left << std::setw(12) << process->getname() << " " + std::to_string(memory) + " Bytes" << std::endl;
+            }
+        }
+    }
+}
+
+void Scheduler::print_memory_sleeping()
+{
+    std::lock_guard<std::mutex> lock(sleepmutex);
+    for (const auto& process : *SleepingProcess) {
+        if (process != nullptr)
+        {
+            auto memory = MemoryManager::getInstance().getMemoryUsage(process->getID());
+            if (memory > 0 )
+            {
+                std::cout << std::left << std::setw(12) << process->getname() << " " + std::to_string(memory) + " Bytes" << std::endl;
+            }
+        }
     }
 }
 
@@ -271,8 +301,8 @@ void Scheduler::print_ticks()
         activeTicks+=cpu.getActiveTicks();
         idleTicks+=cpu.getIdleTicks();
     }
-    std::cout << "Total CPU Ticks " << totalTicks << std::endl;
-    std::cout << "Active CPU Ticks " << activeTicks << std::endl;
-    std::cout << "Idle CPU Ticks " << idleTicks << std::endl;
+    std::cout << std::left << std::setw(20) << "Total CPU Ticks: " << totalTicks << std::endl;
+    std::cout << std::left << std::setw(20) << "Active CPU Ticks: " << activeTicks << std::endl;
+    std::cout << std::left << std::setw(20) << "Idle CPU Ticks: " << idleTicks << std::endl;
 
 }

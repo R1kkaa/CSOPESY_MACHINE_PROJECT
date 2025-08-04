@@ -48,16 +48,16 @@ public:
     }
     // Read uint16 value from specific offset in page
     uint16_t readUint16(int offset) {
-        if (offset < 0 || offset + 2 > static_cast<int>(data.size())) {
-            throw std::out_of_range("Invalid memory offset");
+        if (offset + 2 > static_cast<int>(data.size())) {
+            offset--;
         }
         return (static_cast<uint16_t>(data[offset]) << 8) | static_cast<uint16_t>(data[offset + 1]);
     }
 
     // Write uint16 value to specific offset in page
     void writeUint16(int offset, uint16_t value) {
-        if (offset < 0 || offset + 2 > static_cast<int>(data.size())) {
-            throw std::out_of_range("Invalid memory offset");
+        if (offset + 2 > static_cast<int>(data.size())) {
+            offset--;
         }
 
         data[offset] = static_cast<uint8_t>((value >> 8) & 0xFF);

@@ -23,6 +23,19 @@ class generateprocess: public Thread{
     int processcount = 0;
     uint64_t currtick = 0;
     int minmemperproc = 64;
+
+public:
+    void set_minmemperproc(int minmemperproc)
+    {
+        this->minmemperproc = minmemperproc;
+    }
+
+    void set_maxmemperproc(int maxmemperproc)
+    {
+        this->maxmemperproc = maxmemperproc;
+    }
+
+private:
     int maxmemperproc = 64;
     public:
     generateprocess(uint64_t Delay, std::deque<std::shared_ptr<process>>* ReadyQueue, Scheduler* scheduler,

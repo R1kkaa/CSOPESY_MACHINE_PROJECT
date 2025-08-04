@@ -32,6 +32,7 @@ generateprocess::generateprocess(uint64_t Delay, std::deque<std::shared_ptr<proc
     this->maxmemperproc = maxmemperproc;
 }
 
+
 void generateprocess::run()
 {
     while (true)
@@ -65,27 +66,6 @@ process generateprocess::generatedummyprocess(const std::string name, uint64_t m
     uint64_t count = 0;
     int declaredvars = 0;
     uint64_t instructionsize = distrib(gen);
-
-    /*
-    newprocess.getvarList()->insert({"x",0});
-    newprocess.getvarList()->insert({"1",1});
-    newprocess.getvarList()->insert({"2",2});
-    newprocess.getvarList()->insert({"3",3});
-    newprocess.getvarList()->insert({"4",4});
-    newprocess.getvarList()->insert({"5",5});
-    newprocess.getvarList()->insert({"6",6});
-    newprocess.getvarList()->insert({"7",7});
-    newprocess.getvarList()->insert({"8",8});
-    newprocess.getvarList()->insert({"9",9});
-    newprocess.getvarList()->insert({"10",10});
-    for (int i = 0; i < 50000; i++)
-    {
-        commands.push(std::make_shared<PrintCommand>(newprocess.getID(), toPrint, "x", newprocess.getPrintLogs(), newprocess.getvarList()));
-        commands.push(std::make_shared<AddCommand>(newprocess.getID(), "x", "x", std::to_string(getRandomNumber(1,10)), newprocess.getvarList()));
-    }
-    newprocess.setinstructions(commands, commands.size());
-    return newprocess;
-    */
     while (count < instructionsize)
     {
 
@@ -137,11 +117,15 @@ process generateprocess::generatedummyprocess(const std::string name, uint64_t m
             {
                 std::string hex = std::format("0x{:X}", getRandomNumber(0,procmem-1));
                 commands.push(std::make_shared<WriteCommand>(newprocess.getID(), getRandomNumber(0, 65535), hex));
+                count++;
+                break;
             }
         case 7: //READ
             {
                 std::string hex = std::format("0x{:X}", getRandomNumber(0,procmem-1));
                 commands.push(std::make_shared<ReadCommand>(newprocess.getID(), "var"+std::to_string(getRandomNumber(0,declaredvars)), hex, newprocess.getvarList()));
+                count++;
+                break;
             }
         }
     }

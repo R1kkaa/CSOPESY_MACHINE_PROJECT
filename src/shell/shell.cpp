@@ -99,7 +99,8 @@ void Shell::start(){
                 generateprocess.set_delay(BatchDelay);
                 generateprocess.set_maxsize(maxLines); 
                 generateprocess.set_minsize(minLines);
-
+                generateprocess.set_minmemperproc(minmemPerProc);
+                generateprocess.set_maxmemperproc(maxmemPerProc);
                 MemoryManager::init(maxOverallMem,memPerFrame);
 
                 Scheduler::getInstance().start();
@@ -113,19 +114,48 @@ void Shell::start(){
                 Util::clearScreen();
             }
             else if (userInput[0] == "scheduler-start" && initialized) {
-                std::cout << userInput[0] << " command recognized." << std::endl;
+                std::cout << userInput[0] << " Process generation started." << std::endl;
                 generateprocess.setcreateprocess(true);
             }
             else if (userInput[0] == "scheduler-stop" && initialized) {
-                std::cout << userInput[0] << " command recognized." << std::endl;
+                std::cout << userInput[0] << " Process generation stopped." << std::endl;
                 generateprocess.setcreateprocess(false);
             }
             else if (userInput[0] == "vmstat" && initialized) {
+                Util::clearScreen();
+                std::cout << "-----------------------------------" << std::endl;
+                std::cout << "Memory Details" << std::endl;
+                std::cout << "-----------------------------------" << std::endl;
                 Scheduler::getInstance().print_ticks();
                 MemoryManager::getInstance().printMemory();
+                std::cout << "-----------------------------------" << std::endl;
             }
+            else if (userInput[0] == "process-smi" && initialized)
+            {
+                int count = 0;
+                Util::clearScreen();
+                std::cout << "-----------------------------------" << std::endl;
+                std::cout << "Running Processes:" << std::endl;
+                std::cout << "-----------------------------------" << std::endl;
+                std::cout << std::left << std::setw(12) << "Name:" << " Bytes: " << std::endl;
+                for (int i = 0; i < CPUs.size(); i++)
+                {
+                    if (CPUs.at(i).get_running() && CPUs.at(i).currProcess != nullptr) {
+                        std::cout << std::left << std::setw(12) << CPUs.at(i).curr_process()->getname() << " " + std::to_string(MemoryManager::getInstance().getMemoryUsage(CPUs.at(i).curr_process()->getID())) + " Bytes" << std::endl;
+                        count++;
+                    }
+                }
+                std::cout << "-----------------------------------" << std::endl;
+                std::cout << "Processes in Memory:" << std::endl;
+                std::cout << "-----------------------------------" << std::endl;
+                std::cout << std::left << std::setw(12) << "Name:" << " Bytes: " << std::endl;
+                Scheduler::getInstance().print_memory_ready();
+                Scheduler::getInstance().print_memory_sleeping();
+                std::cout << "-----------------------------------" << std::endl;
+                std::cout << std::left << std::setw(12) << "\nCPU Utilization:" << std::to_string((int)fractionToPercent(count, CPUs.size())) + "%" << std::endl;
+                MemoryManager::getInstance().printMemoryUsage();
 
-
+            }
             //return to the existing screen
             else if (initialized && userInput[0] == "screen" && userInput[1] == "-r")
             {
@@ -157,8 +187,6 @@ void Shell::start(){
             }
             //TODO: Change the screen -ls command to a function within scheduler-start to retrieve the processes, otherwise race conditions and mutex violations occur which breaks/stops the code
             else if (userInput[0] == "screen" && userInput[1] == "-ls" && initialized) {
-                bool run = true;
-                while (run){
                     Util::clearScreen();
                     std::cout << "-----------------------------------" << std::endl;
                     std::cout << "Running Processes:" << std::endl;
@@ -166,17 +194,17 @@ void Shell::start(){
                     for (int i = 0; i < CPUs.size(); i++)
                     {
                         if (CPUs.at(i).get_running() && CPUs.at(i).currProcess != nullptr) {
-                            std::cout << CPUs.at(i).curr_process()->getname() << "   " + CPUs.at(i).curr_process()->displayTimestamp() + "    Core: " + std::to_string(i) + "     " + std::to_string(CPUs.at(i).curr_process()->getcurrLine()) + "/" + std::to_string(CPUs.at(i).curr_process()->getmaxLine()) << std::endl;
+                            std::cout << std::left << std::setw(12) << CPUs.at(i).curr_process()->getname() << " " + CPUs.at(i).curr_process()->displayTimestamp() + " Core: " + std::to_string(i) + " " + std::to_string(CPUs.at(i).curr_process()->getcurrLine()) + "/" + std::to_string(CPUs.at(i).curr_process()->getmaxLine()) << std::endl;
                             count++;
                         }
                         else
                         {
-                            std::cout << "Core: " + std::to_string(i) + "     Status: Idle" << std::endl;
+                            std::cout << std::left << std::setw(12) << "Core: " + std::to_string(i) + " Status: Idle" << std::endl;
                         }
                     }
                     std::cout << "-----------------------------------" << std::endl;
-                    std::cout << "\nCPU Utilization:" + std::to_string((int)fractionToPercent(count, CPUs.size())) + "%" << std::endl;
-                    std::cout << "\nAvailable Cores:" + std::to_string(CPUs.size()-count) << std::endl;
+                    std::cout << std::left << std::setw(12) << "\nCPU Utilization:" << std::to_string((int)fractionToPercent(count, CPUs.size())) + "%" << std::endl;
+                    std::cout << std::left << std::setw(12) << "\nAvailable Cores:" << std::to_string(CPUs.size()-count) << std::endl;
 
                     std::cout << "\n\nReady Processes:" << std::endl;
                     std::cout << "----------------------------------" << std::endl;
@@ -190,23 +218,10 @@ void Shell::start(){
                     std::cout << "----------------------------------" << std::endl;
                     Scheduler::getInstance().print_finished();
                     std::cout << "----------------------------------\n" << std::endl;
-                    try {
-                        std::vector<std::string> userInput = Util::readInput();
-                        userInput.at(0);
-                        if (userInput[0] == "exit") {
-                            Util::clearScreen();
-                            run = false;
-                        }
-                        else if (userInput[0] != "screen" || userInput[1] != "-ls") {
-                            std::cout << "Command not found\n";
-                        }
-                    }
-
-                    catch (const std::out_of_range& e) {
-                        //catch out of bounds
-                    }
-
-                }
+                    std::cout << "\nDestroyed Processes:" << std::endl;
+                    std::cout << "----------------------------------" << std::endl;
+                    Scheduler::getInstance().print_destroyed();
+                    std::cout << "----------------------------------\n" << std::endl;
             }
 
             //TODO: Add adding to file here
@@ -262,7 +277,6 @@ void Shell::start(){
                 for (auto i : userInput)
                     std::cout << i << ' ';
                 std::cout << "command not found." << std::endl;
-                system("pause");
                 std::cin.clear();
             }
             std::cout << std::endl;

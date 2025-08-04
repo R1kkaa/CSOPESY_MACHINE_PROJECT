@@ -10,6 +10,7 @@
 #include <shared_mutex>
 
 #include "Scheduler.h"
+#include "../shell/shell.h"
 
 static int PAGE_OUT = 0;
 static int PAGE_IN = 0;
@@ -41,12 +42,27 @@ void MemoryManager::printMemory()
             count++;
         }
     }
-    std::cout << "Total Memory: " << maxMemory << std::endl;
-    std::cout << "Used Memory: " << count*memPerFrame << std::endl;
-    std::cout << "Page Out: " << PAGE_OUT << std::endl;
-    std::cout << "Page In: " << PAGE_IN << std::endl;
+    std::cout << std::left << std::setw(20) << "Total Memory: " << std::to_string(maxMemory) + " B "<< std::endl;
+    std::cout << std::left << std::setw(20) << "Used Memory: " << std::to_string(count*memPerFrame) + " B "<< std::endl;
+    std::cout << std::left << std::setw(20) << "Page Out: " << PAGE_OUT << std::endl;
+    std::cout << std::left << std::setw(20) << "Page In: " << PAGE_IN << std::endl;
 }
 
+void MemoryManager::printMemoryUsage()
+{
+    std::shared_lock<std::shared_mutex> lock(memlock);
+    int count = 0;
+    for (int i = 0; i < frames.size(); i++)
+    {
+        if (frames.at(i).page != nullptr)
+        {
+            count++;
+        }
+    }
+    std::cout << std::left << std::setw(12) <<"Memory Usage: " << count*memPerFrame << " B / " << maxMemory << " B " << std::endl;
+    std::cout << std::left << std::setw(12) <<"Memory Util: " << std::to_string((int) Shell::fractionToPercent(count*memPerFrame, maxMemory)) + "%" << std::endl;
+
+}
 Pages* MemoryManager::getPageInMemory(int processid, int pageid)
 {
     std::shared_lock<std::shared_mutex> lock(memlock);
@@ -210,6 +226,19 @@ std::vector<uint8_t> MemoryManager::hexToVector(const std::string& hex) const {
     return data;
 }
 
+int MemoryManager::getMemoryUsage(int processid)
+{
+    int count = 0;
+    for (int i = 0; i < frames.size(); i++)
+    {
+        if (frames.at(i).page != nullptr)
+        {
+            if (frames.at(i).page->getProcessId()==processid)
+                count++;
+        }
+    }
+    return count * memPerFrame;
+}
 // Create entry string
 std::string MemoryManager::createEntry(int process_id, int page_id, const std::vector<uint8_t>& data) const {
     return std::to_string(process_id) + "," + std::to_string(page_id) + "," + vectorToHex(data);

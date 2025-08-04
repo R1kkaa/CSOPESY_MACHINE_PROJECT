@@ -41,6 +41,47 @@ std::vector<std::string> Util::readInput() {
     return userInput;
 }
 
+
+std::vector<std::string> Util::split(const std::string & str, char delimiter) {
+    std::vector<std::string> word;
+    std::stringstream ss(str);
+    std::string token;
+
+    while (std::getline(ss, token, delimiter)) {
+        word.push_back(token);
+    }
+
+    return word;
+}
+
+
+//remove "
+std::string Util::cleaned(const std::string& str) {
+    std::string result = str;
+
+    size_t start = str.find_first_not_of(" \t\n\r");
+    if (start == std::string::npos) return "";  // all whitespace
+
+    // Find last non-whitespace character
+    size_t end = str.find_last_not_of(" \t\n\r");
+    result = str.substr(start, end - start + 1);
+
+    // Remove all leading spaces
+    start = result.find_first_not_of(" \t\n\r");
+    if (start != std::string::npos) {
+        result = result.substr(start);
+
+    }
+
+    if (!result.empty() && (result.front() == '"')) {
+        result.erase(0, 1);  // remove first character
+    }
+    if (!result.empty() && result.back() == '"') {
+        result.pop_back();   // remove last character
+    }
+    return result;
+}
+
 void Util::printMenu()
 {
     clearScreen();

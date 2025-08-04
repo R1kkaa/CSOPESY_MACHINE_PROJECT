@@ -14,7 +14,7 @@
 class WriteCommand: public ICommand{
     public:
     WriteCommand(int pid, uint16_t value, std::string address):
-        ICommand(pid, ICommand::READ)
+        ICommand(pid, ICommand::WRITE)
     {
         this->value = value;
         this->address = address;

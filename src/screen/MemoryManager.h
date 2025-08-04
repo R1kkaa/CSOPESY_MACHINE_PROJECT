@@ -59,6 +59,7 @@ class MemoryManager {
     std::pair<int, int> parseAddress(std::string address);
     std::string vectorToHex(const std::vector<uint8_t>& data) const;
     std::vector<uint8_t> hexToVector(const std::string& hex) const;
+    int getMemoryUsage(int processid);
     std::string createEntry(int process_id, int page_id, const std::vector<uint8_t>& data) const;
     void addPage(int process_id, int page_id, const std::vector<uint8_t>& data);
     bool removePage(int process_id, int page_id);
@@ -70,6 +71,7 @@ class MemoryManager {
     bool parseEntry(const std::string& entry, int& process_id, int& page_id, std::vector<uint8_t>& data) const;
     int findVictimFrame();
     void printMemory();
+    void printMemoryUsage();
     Pages* getPageInMemory(int processid, int pageid);
     int allocatePage(Pages pages);
     int findPageinMemory(int processid, int pageid);

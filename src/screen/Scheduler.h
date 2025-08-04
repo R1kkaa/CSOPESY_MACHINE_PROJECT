@@ -79,6 +79,8 @@ class Scheduler: public Thread{
     void print_sleeping();
     void print_finished();
     void print_destroyed();
+    void print_memory_ready();
+    void print_memory_sleeping();
     void print_ticks();
     void run() override;
     void checkSleepingProcesses();
