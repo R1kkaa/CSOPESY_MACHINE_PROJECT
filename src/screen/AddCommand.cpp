@@ -45,7 +45,8 @@ void AddCommand::execute()
     }
     else
     {
-        varList->insert({this->result,result});
+        if (varList->size() < 32)
+            varList->insert({this->result,result});
     }
 }
 int AddCommand::getsize()

@@ -33,4 +33,8 @@ add_executable(CSOPESY_OS main.cpp
         src/screen/SubCommand.cpp
         src/screen/SubCommand.h
         src/screen/Memory.cpp
-        src/screen/Memory.h)
+        src/screen/Memory.h
+        src/screen/Pages.cpp
+        src/screen/Pages.h
+        src/screen/MemoryManager.cpp
+        src/screen/MemoryManager.h)
