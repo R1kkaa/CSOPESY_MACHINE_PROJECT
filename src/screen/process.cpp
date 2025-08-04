@@ -10,14 +10,20 @@
 #include <utility>
 #include <fstream>
 
+#include "MemoryManager.h"
 #include "PrintCommand.h"
+#include "ReadCommand.h"
+#include "WriteCommand.h"
 
-process::process(std::string name) : printLogs(std::make_shared<std::stringstream>()), sleepcounter(std::make_shared<int>(0)), varList(std::make_shared<std::unordered_map<std::string, uint16_t>>())
+class ReadCommand;
+
+process::process(std::string name, int memory) : printLogs(std::make_shared<std::stringstream>()), sleepcounter(std::make_shared<int>(0)), varList(std::make_shared<std::unordered_map<std::string, std::string>>())
 {
     this->name = std::move(name);
     id=++counter;
     creationTime = std::chrono::system_clock::now();
     this->status = STOPPED;
+    this->memory = memory;
 
 }
 std::string process::getname() const
@@ -78,7 +84,7 @@ std::shared_ptr<std::stringstream> process::getPrintLogs()
     return printLogs;
 }
 
-std::shared_ptr<std::unordered_map<std::string, uint16_t>> process::getvarList()
+std::shared_ptr<std::unordered_map<std::string, std::string>> process::getvarList()
 {
     return varList;
 }
@@ -98,33 +104,46 @@ void process::set_cpu_cycled(bool cpu_cycled)
 {
     hasCPUCycled=cpu_cycled;
 }
-
+bool process::getMemoryViolation()
+{
+    return memory_violation;
+}
 //TODO: Finish all commands
 void process::runInstruction()
 {
     // if there are still instructions
     if (!instructions.empty() && status != SLEEPING)
     {
+        // if current command is READ or WRITE
+        if (instructions.front()->getCommandType() == ICommand::READ)
+        {
+            auto ptr = std::dynamic_pointer_cast<ReadCommand>(instructions.front());
+            auto address = ptr->getaddress();
+            int value = std::stoi(address, nullptr, 16);
+            if (value > memory || value < 0)
+            {
+                memory_violation = true;
+                status = DESTROYED;
+            }
+        }
+        if (instructions.front()->getCommandType() == ICommand::WRITE)
+        {
+            auto ptr = std::dynamic_pointer_cast<WriteCommand>(instructions.front());
+            auto address = ptr->getaddress();
+            int value = std::stoi(address, nullptr, 16);
+            if (value > memory || value < 0)
+            {
+                memory_violation = true;
+                status = DESTROYED;
+            }
+        }
         // if current command is PRINT
-        if (instructions.front()->getCommandType() == ICommand::PRINT)
+        if (instructions.front()->getCommandType() == ICommand::PRINT && !memory_violation)
         {
             instructions.front()->execute();
             std::string append = "(" + executionTime() + ") " + "Core:" + std::to_string(this->core) + " " + printLogs->str();
             instructions.pop();
             formattedLogs.push_back(append);
-            /*
-            std::string filename = this->getname() + ".txt";
-            std::ofstream logFile(filename, std::ios::app); // open in append mode
-            if (logFile.is_open())
-            {
-                logFile << append << std::endl;
-                logFile.close();
-            }
-            else
-            {
-                std::cerr << "Error: could not open log file for " << this->getname() << std::endl;
-            }
-            */
             printLogs->str("");
             printLogs->clear();
             currLine += 1;
@@ -135,7 +154,7 @@ void process::runInstruction()
                 formattedLogs.emplace_back("Finished!");
 
             }
-        }else
+        }else if (!memory_violation)
         {
             instructions.front()->execute();
             if (instructions.front()->getCommandType() == ICommand::SLEEP)

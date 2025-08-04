@@ -22,12 +22,16 @@ class generateprocess: public Thread{
     uint64_t minsize;
     int processcount = 0;
     uint64_t currtick = 0;
+    int minmemperproc = 64;
+    int maxmemperproc = 64;
     public:
     generateprocess(uint64_t Delay, std::deque<std::shared_ptr<process>>* ReadyQueue, Scheduler* scheduler,
                     std::mutex* queuemutex, uint64_t maxsize, uint64_t minsize);
+    generateprocess(uint64_t Delay, std::deque<std::shared_ptr<process>>* ReadyQueue, Scheduler* scheduler,
+                    std::mutex* queuemutex, uint64_t maxsize, uint64_t minsize, int minmemperproc, int maxmemperproc);
     void run() override;
     void setcreateprocess(bool val);
-    static process generatedummyprocess(std::string name, uint64_t minsize, uint64_t maxsize);
+    static process generatedummyprocess(std::string name, uint64_t minsize, uint64_t maxsize, int minmemperproc, int maxmemperproc);
     static int getRandomNumber(int min, int max);
     static std::tuple<ForCommand, int> generateforloop(uint64_t size, int declaredvars, std::string name, process* newprocess, int recurses);
 

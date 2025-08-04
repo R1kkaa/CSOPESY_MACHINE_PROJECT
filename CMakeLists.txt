@@ -36,5 +36,9 @@ add_executable(CSOPESY_OS main.cpp
         src/screen/Memory.h
         src/screen/Pages.cpp
         src/screen/Pages.h
+        src/screen/ReadCommand.cpp
+        src/screen/ReadCommand.h
+        src/screen/WriteCommand.cpp
+        src/screen/WriteCommand.h
         src/screen/MemoryManager.cpp
         src/screen/MemoryManager.h)

@@ -7,12 +7,16 @@
 
 #include <fstream>
 #include <iostream>
+#include <shared_mutex>
+
+#include "Scheduler.h"
 
 static int PAGE_OUT = 0;
 static int PAGE_IN = 0;
 MemoryManager* MemoryManager::instance = nullptr;
 //Find Victim through FIFO
 int MemoryManager::findVictimFrame(){
+
     int tickEntered = frames.at(0).tickEntered;
     int currFrame = 0;
     for (int i = 0; i < frames.size(); i++)
@@ -26,8 +30,26 @@ int MemoryManager::findVictimFrame(){
     return currFrame;
 }
 
+void MemoryManager::printMemory()
+{
+    std::shared_lock<std::shared_mutex> lock(memlock);
+    int count = 0;
+    for (int i = 0; i < frames.size(); i++)
+    {
+        if (frames.at(i).page != nullptr)
+        {
+            count++;
+        }
+    }
+    std::cout << "Total Memory: " << maxMemory << std::endl;
+    std::cout << "Used Memory: " << count*memPerFrame << std::endl;
+    std::cout << "Page Out: " << PAGE_OUT << std::endl;
+    std::cout << "Page In: " << PAGE_IN << std::endl;
+}
+
 Pages* MemoryManager::getPageInMemory(int processid, int pageid)
 {
+    std::shared_lock<std::shared_mutex> lock(memlock);
     auto index = findPageinMemory(processid, pageid);
     if (index == -1)
         return nullptr;
@@ -43,6 +65,7 @@ int MemoryManager::allocatePage(Pages pages)
     {
         if (nullptr == frames.at(i).page)
         {
+            frames.at(i).tickEntered = Scheduler::getInstance().getTick();
             frames.at(i).page = std::make_unique<Pages>(pages);
             return i;
         }
@@ -52,6 +75,7 @@ int MemoryManager::allocatePage(Pages pages)
     //place frame in backing store
     evictPage(*frames.at(replaceposition).page);
     //put new page in frame
+    frames.at(replaceposition).tickEntered = Scheduler::getInstance().getTick();
     frames.at(replaceposition).page = std::make_unique<Pages>(pages);
     return replaceposition;
 }
@@ -81,6 +105,7 @@ void MemoryManager::emptyFrame(int framenum)
 //find page and write in memory
 void MemoryManager::writeInMemory(int processid, std::string address, uint16_t value)
 {
+    std::unique_lock<std::shared_mutex> lock(memlock);
 auto [pageid, offset] = parseAddress(address);
     int index = findPageinMemory(processid, pageid);
     //not in memory
@@ -89,11 +114,13 @@ auto [pageid, offset] = parseAddress(address);
         index = handlePageFault(processid, pageid, address);
     }
     frames.at(index).page->writeUint16(offset, value);
+    //std::cout << "Writing In Memory, Process " << processid << " Address " << address << " Value " << value << std::endl;
 }
 
 //find page and read memory
 uint16_t MemoryManager::readInMemory(int processid, std::string address)
 {
+    std::unique_lock<std::shared_mutex> lock(memlock);
     auto [pageid, offset] = parseAddress(address);
     int index = findPageinMemory(processid, pageid);
     //not in memory
@@ -101,9 +128,24 @@ uint16_t MemoryManager::readInMemory(int processid, std::string address)
     {
         index = handlePageFault(processid, pageid, address);
     }
-    return frames.at(index).page->readUint16(offset);
+    uint16_t result = frames.at(index).page->readUint16(offset);
+    //std::cout << "Reading In Memory, Process " << processid << " Address " << address << " Value " << result << std::endl;
+    return result;
 }
 
+void MemoryManager::deallocateProcess(int processid)
+{
+    std::unique_lock<std::shared_mutex> lock(memlock);
+    removeProcess(processid);
+    for (int i = 0; i < frames.size(); i++)
+    {
+        if (frames.at(i).page != nullptr)
+        {
+            if (frames.at(i).page->getProcessId()==processid)
+                frames.at(i).page = nullptr;
+        }
+    }
+}
 int MemoryManager::handlePageFault(int processid, int pageid, std::string address)
 {
     //check in backing store

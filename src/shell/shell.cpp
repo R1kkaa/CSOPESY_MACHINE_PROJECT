@@ -17,6 +17,7 @@
 #include "../screen/PrintCommand.h"
 #include "../screen/Scheduler.h"
 #include "../screen/Memory.h"
+#include "../screen/MemoryManager.h"
 
 //TODO: Read config file first and implement "initialize command" (We can do this last)
 
@@ -37,20 +38,18 @@ void Shell::start(){
     uint64_t maxLines = 20;
     uint64_t maxOverallMem = 16384;
     uint64_t memPerFrame = 16;
-    uint64_t memPerProc = 4096;
+    uint64_t minmemPerProc = 4096;
+    uint64_t maxmemPerProc = 4096;
 
     //generate CPUs
     CPUs = generateCPUs(4);
 
     //initialize memory
-    auto memoryPtr = std::make_shared<Memory>(maxOverallMem, memPerFrame, memPerProc);
-    //Memory memManager(maxOverallMem, memPerFrame, memPerProc, memoryPtr);
-    
     //initialize scheduler
-    Scheduler::getInstance(TimeQuantum, Delay, &processes, &finishedprocesses, &sleepingprocesses, memoryPtr, isRR, &CPUs, &deque_mutex);
+    Scheduler::getInstance(TimeQuantum, Delay, &processes, &finishedprocesses, &sleepingprocesses, isRR, &CPUs, &deque_mutex);
 
     //start CPU ticks
-    generateprocess generateprocess(BatchDelay, &processes, &Scheduler::getInstance(), &deque_mutex, maxLines, minLines);
+    generateprocess generateprocess(BatchDelay, &processes, &Scheduler::getInstance(), &deque_mutex, maxLines, minLines, minmemPerProc, maxmemPerProc);
 
 
     //start scheduler and tick counts (currently CPU Ticks does not do anything)
@@ -70,6 +69,7 @@ void Shell::start(){
             if (userInput[0] != "initialize" && !initialized) {
                 std::cout << "Kindly initialize first." << std::endl;
                 system("pause");
+                Util::printMenu();
             }
             else if (userInput[0] == "initialize" && !initialized) {
                 std::cout << userInput[0] << " command recognized." << std::endl;
@@ -82,7 +82,8 @@ void Shell::start(){
                 TimeQuantum = stoi(config["quantum-cycles"]);
                 maxOverallMem = stoi(config["max-overall-mem"]);
                 memPerFrame = stoi(config["mem-per-frame"]);
-                memPerProc = stoi(config["mem-per-proc"]);
+                minmemPerProc = stoi(config["min-mem-per-proc"]);
+                maxmemPerProc = stoi(config["max-mem-per-proc"]);
                 if (config["scheduler"]=="\"rr\"")
                 {
                     Scheduler::getInstance().setRR(true);
@@ -99,19 +100,17 @@ void Shell::start(){
                 generateprocess.set_maxsize(maxLines); 
                 generateprocess.set_minsize(minLines);
 
-                memoryPtr->setFrameSize(memPerFrame);
-                memoryPtr->setProcSize(memPerProc);
-                memoryPtr->setMemorySize(maxOverallMem);
+                MemoryManager::init(maxOverallMem,memPerFrame);
 
                 Scheduler::getInstance().start();
                 generateprocess.start();
                 system("pause");
                 initialized = true;
-                Util::printMenu();
+                Util::clearScreen();
             }
             else if (userInput[0] == "clear" && initialized) {
                 std::cout << userInput[0] << " command recognized." << std::endl;
-                Util::printMenu();
+                Util::clearScreen();
             }
             else if (userInput[0] == "scheduler-start" && initialized) {
                 std::cout << userInput[0] << " command recognized." << std::endl;
@@ -121,6 +120,11 @@ void Shell::start(){
                 std::cout << userInput[0] << " command recognized." << std::endl;
                 generateprocess.setcreateprocess(false);
             }
+            else if (userInput[0] == "vmstat" && initialized) {
+                Scheduler::getInstance().print_ticks();
+                MemoryManager::getInstance().printMemory();
+            }
+
 
             //return to the existing screen
             else if (initialized && userInput[0] == "screen" && userInput[1] == "-r")
@@ -128,7 +132,7 @@ void Shell::start(){
                 //findsession either returns an existing process or creates a new process, openscreen opens the said process
                 std::shared_ptr<process>* foundProcess = findsession(CPUs, processes, sleepingprocesses, userInput[2]);
                 if(foundProcess == nullptr) { //if no existing process, return not found
-                    Util::printMenu();
+                    Util::clearScreen();
                     std::cout << "Process <" + userInput[2] + "> not found." << std::endl;
                     system("pause");
 				}
@@ -141,12 +145,12 @@ void Shell::start(){
                 std::shared_ptr<process>* foundProcess = findsession(CPUs, processes, sleepingprocesses, userInput[2]);
                 if (foundProcess == nullptr) { //if no existing process, make one
                     Util::clearScreen();
-                    std::shared_ptr<process> newprocess = std::make_shared<process>(generateprocess::generatedummyprocess(userInput[2], minLines, maxLines));
+                    std::shared_ptr<process> newprocess = std::make_shared<process>(generateprocess::generatedummyprocess(userInput[2], minLines, maxLines, minmemPerProc, maxmemPerProc));
                     processes.push_back(newprocess);
                     openscreen(newprocess);
                 }
                 else {
-                    Util::printMenu();
+                    Util::clearScreen();
                     std::cout << "Process <" + userInput[2] + "> exists." << std::endl;
                     system("pause");
                 }
@@ -155,7 +159,7 @@ void Shell::start(){
             else if (userInput[0] == "screen" && userInput[1] == "-ls" && initialized) {
                 bool run = true;
                 while (run){
-                    Util::printMenu();
+                    Util::clearScreen();
                     std::cout << "-----------------------------------" << std::endl;
                     std::cout << "Running Processes:" << std::endl;
                     int count = 0;
@@ -174,62 +178,34 @@ void Shell::start(){
                     std::cout << "\nCPU Utilization:" + std::to_string((int)fractionToPercent(count, CPUs.size())) + "%" << std::endl;
                     std::cout << "\nAvailable Cores:" + std::to_string(CPUs.size()-count) << std::endl;
 
-
-
                     std::cout << "\n\nReady Processes:" << std::endl;
                     std::cout << "----------------------------------" << std::endl;
-                    for (const auto& process : processes) {
-                        if (process != nullptr)
-                            std::cout << process->getname() << "   " + process->displayTimestamp() + "    STATUS: READY     " + std::to_string(process->getcurrLine()) + "/" + std::to_string(process->getmaxLine()) << std::endl;
-                    }
-
+                    Scheduler::getInstance().print_ready();
+                    std::cout << "----------------------------------\n" << std::endl;
                     std::cout << "\nSleeping Processes:" << std::endl;
                     std::cout << "----------------------------------" << std::endl;
-                    for (const auto& process : sleepingprocesses) {
-                        if (process != nullptr)
-                            std::cout << process->getname() << "   " + process->displayTimestamp() + "    STATUS: SLEEPING     " + std::to_string(process->getcurrLine()) + "/" + std::to_string(process->getmaxLine()) << std::endl;
-                    }
-
+                    Scheduler::getInstance().print_sleeping();
+                    std::cout << "----------------------------------\n" << std::endl;
                     std::cout << "\nFinished Processes:" << std::endl;
                     std::cout << "----------------------------------" << std::endl;
-                    for (const auto& process : finishedprocesses) {
-                        if (process != nullptr)
-                            std::cout << process->getname() << "   " + process->displayTimestamp() + "    STATUS: FINISHED     " + std::to_string(process->getcurrLine()) + "/" + std::to_string(process->getmaxLine()) << std::endl;
-                    }
-                    int countMemory = 0;
-                    std::cout << "\nMemory Array:" << std::endl;
-                    std::cout << "----------------------------------" << std::endl;
-                    std::cout << "Count:" << countMemory << std::endl;
-                    std::cout << "Overall Memory Size:" << memoryPtr->getMemorySize() << std::endl;
-                    std::cout << "Process Size:" << memoryPtr->getProcSize() << std::endl;
-                    std::cout << "Frame Size:" << memoryPtr->getFrameSize() << std::endl;
-                    std::cout << "Memory Sufficient?:";
-                    if (memoryPtr->isSufficient() == -1)
-                    {
-                        std::cout << "No sufficient memory available." << std::endl;
-                    }
-                    else
-                    {
-                        std::cout << "Sufficient memory available." << std::endl;
-                    }
-                    std::cout << "numProcesses:" << memoryPtr->getNumProcesses() << std::endl;
-                    std::cout << "Ext Frag:" << memoryPtr->getExternalFragmentation() << std::endl;
+                    Scheduler::getInstance().print_finished();
+                    std::cout << "----------------------------------\n" << std::endl;
                     try {
                         std::vector<std::string> userInput = Util::readInput();
                         userInput.at(0);
                         if (userInput[0] == "exit") {
                             Util::clearScreen();
-                            Util::printMenu();
                             run = false;
                         }
                         else if (userInput[0] != "screen" || userInput[1] != "-ls") {
                             std::cout << "Command not found\n";
-                            system("pause");
                         }
                     }
+
                     catch (const std::out_of_range& e) {
                         //catch out of bounds
                     }
+
                 }
             }
 
@@ -341,7 +317,7 @@ void Shell::openscreen(std::shared_ptr<process> screen)
             if (userInput[0] == "exit")
             {
                 run = false;
-                Util::printMenu();
+                Util::clearScreen();
             }
             if (userInput[0] == "process-smi")
             {

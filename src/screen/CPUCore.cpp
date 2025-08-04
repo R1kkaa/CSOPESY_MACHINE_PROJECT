@@ -31,9 +31,13 @@ CPUCore::CPUCore(int id)
             {
                 currProcess->runInstruction();
                 setruninstruction(true);
-                //if process is sleeping/finished -> remove process
             }
             remove_curr_process();
+            ActiveTicks+=1;
+        }
+        else
+        {
+            IdleTicks+=1;
         }
         timequantum++;
         currTick = Scheduler::getInstance().getTick();
@@ -41,6 +45,15 @@ CPUCore::CPUCore(int id)
     }
 }
 
+int CPUCore::getIdleTicks()
+{
+    return IdleTicks;
+}
+
+int CPUCore::getActiveTicks()
+{
+    return ActiveTicks;
+}
 std::shared_ptr<process> CPUCore::curr_process() const
 {
     return currProcess;
@@ -96,6 +109,13 @@ void CPUCore::remove_curr_process()
             timequantum = 0;
             running = false;
             Scheduler::getInstance().push_to_sleeping(currProcess);
+            this->currProcess = nullptr;
+        }
+        else if (currProcess->getstatus() == process::DESTROYED)
+        {
+            timequantum = 0;
+            running = false;
+            Scheduler::getInstance().push_to_violation(currProcess);
             this->currProcess = nullptr;
         }
     }

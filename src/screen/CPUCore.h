@@ -25,9 +25,13 @@ public:
     bool sentToFinishedVector = false;
     bool sentToSleepingVector = false;
     std::condition_variable* cv_ptr;
+    int IdleTicks = 0;
+    int ActiveTicks = 0;
 
     CPUCore(int id);
     [[noreturn]] void run() override;
+    int getIdleTicks();
+    int getActiveTicks();
     [[nodiscard]] std::shared_ptr<process> curr_process() const;
     bool get_running();
     void set_running(bool running);

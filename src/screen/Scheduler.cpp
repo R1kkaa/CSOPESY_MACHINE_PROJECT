@@ -5,6 +5,7 @@
 #include "Scheduler.h"
 #include <algorithm>
 #include "Memory.h"
+#include "MemoryManager.h"
 
 int TICK_DELAY = 10;
 std::unique_ptr<Scheduler> Scheduler::instance = nullptr;
@@ -13,7 +14,7 @@ std::once_flag Scheduler::initialized;
 Scheduler::Scheduler() {
 }
 
-Scheduler::Scheduler(uint64_t TimeQuantum, uint64_t Delay, std::deque<std::shared_ptr<process>>* ReadyQueue, std::vector<std::shared_ptr<process>>* FinishedProcess, std::vector<std::shared_ptr<process>>* SleepingProcess, std::shared_ptr<Memory> memoryPtr, bool isRR, std::vector<CPUCore>* CPUs, std::mutex* queuemutex)
+Scheduler::Scheduler(uint64_t TimeQuantum, uint64_t Delay, std::deque<std::shared_ptr<process>>* ReadyQueue, std::vector<std::shared_ptr<process>>* FinishedProcess, std::vector<std::shared_ptr<process>>* SleepingProcess,  bool isRR, std::vector<CPUCore>* CPUs, std::mutex* queuemutex)
 {
 	this->FinishedProcess = FinishedProcess;
     this->ReadyQueue = ReadyQueue;
@@ -25,18 +26,16 @@ Scheduler::Scheduler(uint64_t TimeQuantum, uint64_t Delay, std::deque<std::share
     this->SleepingProcess = SleepingProcess;
     this->TimeQuantum = TimeQuantum;
     this->numCores = CPUs->size();
-    this->memoryPtr = memoryPtr;
 }
 
 Scheduler& Scheduler::getInstance(uint64_t TimeQuantum, uint64_t Delay,
     std::deque<std::shared_ptr<process>>* ReadyQueue, std::vector<std::shared_ptr<process>>* FinishedProcess,
-    std::vector<std::shared_ptr<process>>* SleepingProcess, std::shared_ptr<Memory> memoryPtr, bool isRR, std::vector<CPUCore>* CPUs,
+    std::vector<std::shared_ptr<process>>* SleepingProcess, bool isRR, std::vector<CPUCore>* CPUs,
     std::mutex* queuemutex)
 {
     std::call_once(Scheduler::initialized, [&]() {
     Scheduler::instance = std::unique_ptr<Scheduler>(new Scheduler(TimeQuantum, Delay, ReadyQueue,
                                                                    FinishedProcess, SleepingProcess,
-                                                                   memoryPtr,
                                                                    isRR, CPUs, queuemutex));
 });
     return *Scheduler::instance;
@@ -103,8 +102,6 @@ void Scheduler::FCFS_algorithm()
         //if cpu is done with the process
         if (!cpu.get_running())
         {
-            //getprocessfromqueue takes the latest process the queue pops it, returns null if queue is empty
-            //set_curr_process sets the cpu's current process
             cpu.set_curr_process(getprocessfromqueue());
         }
     }
@@ -117,30 +114,11 @@ void Scheduler::RR_algorithm()
         //if cpu has reached the time quantum
         if (cpu.gettimequantum() == TimeQuantum)
         {
-            memoryPtr->printMemoryStatus(std::to_string(CPUticks));
            //always preempt
             cpu.preempt_curr_process();
             auto nextProcess = getprocessfromqueue();
             if (nextProcess) {
-                //if next process is in memory, then set cpu process
-                if (memoryPtr->isInMemory(nextProcess->getID()))
-                {
                     cpu.set_curr_process(nextProcess);
-                }
-                //if next process is not in memory, attempt to put in memory
-                else
-                {
-                    int startIndex = memoryPtr->isSufficient();
-                    if (startIndex >= 0)
-                    {
-                        memoryPtr->allocate_memory(nextProcess->getID(), startIndex);
-                        cpu.set_curr_process(nextProcess);
-                    }
-                    else
-                    {
-                        push_to_ready(nextProcess);
-                    }
-                }
             }
         }
         //if cpu is done with the process or if no process is set
@@ -149,24 +127,7 @@ void Scheduler::RR_algorithm()
             auto nextProcess = getprocessfromqueue();
             if (nextProcess) {
                 //if next process is in memory, then set cpu process
-                if (memoryPtr->isInMemory(nextProcess->getID()))
-                {
-                    cpu.set_curr_process(nextProcess);
-                }
-                //if next process is not in memory, attempt to put in memory
-                else
-                {
-                    int startIndex = memoryPtr->isSufficient();
-                    if (startIndex >= 0)
-                    {
-                        memoryPtr->allocate_memory(nextProcess->getID(), startIndex);
-                        cpu.set_curr_process(nextProcess);
-                    }
-                    else
-                    {
-                        push_to_ready(nextProcess);
-                    }
-                }
+                cpu.set_curr_process(nextProcess);
             }
         }
     }
@@ -219,17 +180,15 @@ void Scheduler::wait_for_start() {
 
 void Scheduler::wait_for_execute()
 {
-    std::unique_lock<std::mutex> lock(cpumutex);
+    std::unique_lock<std::mutex> lock(tickmutex);
     doneCores = 0;
-    lock.unlock();
-    std::mutex mutex;
-    std::unique_lock<std::mutex> lock2(mutex);
     cv.notify_all();
-    cv.wait(lock2, [this] { return numCores == doneCores; });
+    cv.wait(lock, [this] { return numCores == doneCores; });
 }
 void Scheduler::report_done() {
-    std::unique_lock<std::mutex> lock(cpumutex);
-    doneCores++;
+    std::lock_guard<std::mutex> lock(cpumutex);
+    ++doneCores;
+
     if (doneCores == numCores)
     {
         cv.notify_all();
@@ -254,5 +213,66 @@ void Scheduler::push_to_finished(std::shared_ptr<process> process)
     std::lock_guard<std::mutex> lock(finishmutex);
     if (process != nullptr)
     this->FinishedProcess->push_back(process);
-    memoryPtr->deallocate_memory(process->getID());
+    MemoryManager::getInstance().deallocateProcess(process->getID());
+}
+
+void Scheduler::push_to_violation(std::shared_ptr<process> process)
+{
+    std::lock_guard<std::mutex> lock(destroymutex);
+    if (process != nullptr)
+        this->DestroyedProcess.push_back(process);
+    MemoryManager::getInstance().deallocateProcess(process->getID());
+}
+void Scheduler::print_ready()
+{
+    std::lock_guard<std::mutex> lock(*queuemutex);
+    for (const auto& process : *ReadyQueue) {
+        if (process != nullptr)
+            std::cout << process->getname() << "   " + process->displayTimestamp() + "    STATUS: READY     " + std::to_string(process->getcurrLine()) + "/" + std::to_string(process->getmaxLine()) << std::endl;
+    }
+}
+
+void Scheduler::print_sleeping()
+{
+    std::lock_guard<std::mutex> lock(sleepmutex);
+    for (const auto& process : *SleepingProcess) {
+        if (process != nullptr)
+            std::cout << process->getname() << "   " + process->displayTimestamp() + "    STATUS: SLEEPING     " + std::to_string(process->getcurrLine()) + "/" + std::to_string(process->getmaxLine()) << std::endl;
+    }
+}
+
+void Scheduler::print_finished()
+{
+    std::lock_guard<std::mutex> lock(finishmutex);
+    for (const auto& process : *FinishedProcess) {
+        if (process != nullptr)
+            std::cout << process->getname() << "   " + process->displayTimestamp() + "    STATUS: FINISHED     " + std::to_string(process->getcurrLine()) + "/" + std::to_string(process->getmaxLine()) << std::endl;
+    }
+}
+
+void Scheduler::print_destroyed()
+{
+    std::lock_guard<std::mutex> lock(destroymutex);
+    for (const auto& process : DestroyedProcess) {
+        if (process != nullptr)
+            std::cout << process->getname() << "   " + process->displayTimestamp() + "    STATUS: DESTROYED     " <<std::endl;
+    }
+}
+
+void Scheduler::print_ticks()
+{
+    int totalTicks = 0;
+    int activeTicks = 0;
+    int idleTicks = 0;
+    for (CPUCore cpu : *CPUs)
+    {
+        totalTicks+=cpu.getIdleTicks();
+        totalTicks+=cpu.getActiveTicks();
+        activeTicks+=cpu.getActiveTicks();
+        idleTicks+=cpu.getIdleTicks();
+    }
+    std::cout << "Total CPU Ticks " << totalTicks << std::endl;
+    std::cout << "Active CPU Ticks " << activeTicks << std::endl;
+    std::cout << "Idle CPU Ticks " << idleTicks << std::endl;
+
 }

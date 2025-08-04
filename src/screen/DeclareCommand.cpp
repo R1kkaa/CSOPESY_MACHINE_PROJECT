@@ -3,6 +3,9 @@
 //
 
 #include "DeclareCommand.h"
+
+#include "MemoryManager.h"
+
 void DeclareCommand::execute()
 {
     ICommand::execute();
@@ -11,11 +14,15 @@ void DeclareCommand::execute()
         auto found = varList->find(name);
         if (found != varList->end())
         {
-            found->second = value;
+            //write declared var in memory
+            MemoryManager::getInstance().writeInMemory(pid, found->second, value);
         }
         else
         {
-            varList->insert({name, value});
+            int i = varList->size() * 2;
+            std::string address = std::format("0x{:X}",i);
+            varList->insert({name, address});
+            MemoryManager::getInstance().writeInMemory(pid, address, value);
         }
     }
 }

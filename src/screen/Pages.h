@@ -38,11 +38,12 @@ public:
     void setValid(bool valid) { isValid = valid; }
     void setData(std::vector<uint8_t> data)
     {
+        pageSize = data.size();
         this->data = std::move(data);
     }
     void resize(int pageSize)
     {
-        pageSize = pageSize;
+        this->pageSize = pageSize;
         data.resize(pageSize, 0);
     }
     // Read uint16 value from specific offset in page

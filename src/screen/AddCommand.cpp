@@ -3,6 +3,9 @@
 //
 
 #include "AddCommand.h"
+
+#include "MemoryManager.h"
+
 void AddCommand::execute()
 {
     int var1;
@@ -12,22 +15,20 @@ void AddCommand::execute()
     auto found = varList->find(this->var1);
     if (found != varList->end())
     {
-        var1 = found->second;
+        var1 = MemoryManager::getInstance().readInMemory(pid, found->second);
     }
     else
     {
         var1 = 0;
-        varList->insert({this->var1,var1});
     }
     found = varList->find(this->var2);
     if (found != varList->end())
     {
-        var2 = found->second;
+        var2 = MemoryManager::getInstance().readInMemory(pid, found->second);
     }
     else
     {
         var2 = 0;
-        varList->insert({this->var2,var2});
     }
     int result = var1 + var2;
     if (result > UINT16_MAX_VAL)
@@ -41,12 +42,17 @@ void AddCommand::execute()
     found = varList->find(this->result);
     if (found != varList->end())
     {
-        found->second = result;
+        MemoryManager::getInstance().writeInMemory(pid, found->second, result);
     }
     else
     {
         if (varList->size() < 32)
-            varList->insert({this->result,result});
+        {
+            int i = varList->size() * 2;
+            std::string address = std::format("0x{:X}",i);
+            varList->insert({this->result, address});
+            MemoryManager::getInstance().writeInMemory(pid, address, result);
+        }
     }
 }
 int AddCommand::getsize()

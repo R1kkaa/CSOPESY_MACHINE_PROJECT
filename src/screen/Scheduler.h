@@ -12,6 +12,7 @@
 #include "Memory.h"
 #include <condition_variable>
 #include <unordered_set>
+#include <bits/shared_ptr_atomic.h>
 
 class CPUCore;
 
@@ -27,16 +28,17 @@ class Scheduler: public Thread{
     bool isRR = false;
     std::mutex* queuemutex;
     std::vector<std::shared_ptr<process>>* SleepingProcess;
+    std::vector<std::shared_ptr<process>> DestroyedProcess;
     std::shared_ptr<std::vector<int>> MemoryArray;
     std::condition_variable cv;
     std::mutex tickmutex;
     std::mutex finishmutex;
     std::mutex sleepmutex;
     std::mutex cpumutex;
+    std::mutex destroymutex;
     bool ready = false;
     int numCores = 0;
-    int doneCores = 0;
-    std::unordered_set<int> allocatedPIDs;
+    std::atomic<int> doneCores = 0;
 
     Scheduler();  // Public constructor
 
@@ -50,16 +52,15 @@ class Scheduler: public Thread{
 
     Scheduler(uint64_t TimeQuantum, uint64_t Delay, std::deque<std::shared_ptr<process>>* ReadyQueue,
       std::vector<std::shared_ptr<process>>* FinishedProcess,
-      std::vector<std::shared_ptr<process>>* SleepingProcess, std::shared_ptr<Memory> memoryPtr, bool isRR, std::vector<CPUCore>* CPUs,
+      std::vector<std::shared_ptr<process>>* SleepingProcess, bool isRR, std::vector<CPUCore>* CPUs,
       std::mutex* queuemutex);
 
     static Scheduler& getInstance(uint64_t TimeQuantum, uint64_t Delay,
-                              std::deque<std::shared_ptr<process>>* ReadyQueue,
-                              std::vector<std::shared_ptr<process>>* FinishedProcess,
-                              std::vector<std::shared_ptr<process>>* SleepingProcess,
-                              std::shared_ptr<Memory> memoryPtr,
-                              bool isRR, std::vector<CPUCore>* CPUs,
-                              std::mutex* queuemutex);
+                                  std::deque<std::shared_ptr<process>>* ReadyQueue,
+                                  std::vector<std::shared_ptr<process>>* FinishedProcess,
+                                  std::vector<std::shared_ptr<process>>* SleepingProcess,
+                                  bool isRR, std::vector<CPUCore>* CPUs,
+                                  std::mutex* queuemutex);
     static Scheduler& getInstance();
 
     bool isDelayDone() const;
@@ -67,17 +68,23 @@ class Scheduler: public Thread{
     std::mutex* getTickMutex();
     void start_work();
     void wait_for_start();
+    std::mutex* getCPUMutex();
     void wait_for_execute();
     void report_done();
     void push_to_ready(std::shared_ptr<process> process);
     void push_to_sleeping(std::shared_ptr<process> process);
     void push_to_finished(std::shared_ptr<process> process);
+    void push_to_violation(std::shared_ptr<process> process);
+    void print_ready();
+    void print_sleeping();
+    void print_finished();
+    void print_destroyed();
+    void print_ticks();
     void run() override;
     void checkSleepingProcesses();
     void FCFS_algorithm();
     void RR_algorithm();
     std::shared_ptr<process> getprocessfromqueue();
-    std::shared_ptr<Memory> memoryPtr;
 
     [[nodiscard]] std::vector<CPUCore>* get_cpus() const
     {

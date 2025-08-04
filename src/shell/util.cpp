@@ -32,7 +32,7 @@ void Util::printHelp() {
 }
 std::vector<std::string> Util::readInput() {
     std::string input;
-    std::cout << "Enter a command: ";
+    std::cout << "OS-EMULATOR~: ";
     std::getline(std::cin, input); // Accepts a full line of input including spaces
     std::stringstream ss(input);
     std::istream_iterator<std::string> begin(ss);

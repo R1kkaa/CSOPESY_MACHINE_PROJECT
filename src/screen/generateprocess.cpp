@@ -11,10 +11,13 @@
 #include "DeclareCommand.h"
 #include "ForCommand.h"
 #include "PrintCommand.h"
+#include "ReadCommand.h"
 #include "SleepCommand.h"
 #include "SubCommand.h"
 #include "Scheduler.h"
-generateprocess::generateprocess(uint64_t Delay, std::deque<std::shared_ptr<process>>* ReadyQueue, Scheduler* scheduler, std::mutex* queuemutex, uint64_t maxsize, uint64_t minsize)
+#include "WriteCommand.h"
+
+generateprocess::generateprocess(uint64_t Delay, std::deque<std::shared_ptr<process>>* ReadyQueue, Scheduler* scheduler, std::mutex* queuemutex, uint64_t maxsize, uint64_t minsize, int minmemperproc, int maxmemperproc)
 {
     this->Delay = Delay;
     this->ReadyQueue = ReadyQueue;
@@ -25,6 +28,8 @@ generateprocess::generateprocess(uint64_t Delay, std::deque<std::shared_ptr<proc
     this->minsize = minsize;
     currtick = 0;
     processcount = 0;
+    this->minmemperproc = minmemperproc;
+    this->maxmemperproc = maxmemperproc;
 }
 
 void generateprocess::run()
@@ -32,10 +37,10 @@ void generateprocess::run()
     while (true)
     {
         auto schedtick = Scheduler::getInstance().getTick();
-        if (createprocess && schedtick%Delay==0 && currtick < schedtick && processcount <= 10)
+        if (createprocess && schedtick%Delay==0 && currtick < schedtick && processcount <= 100)
         {
             currtick = schedtick;
-            process newprocess = generatedummyprocess("process_"+std::to_string(processcount), minsize, maxsize);
+            process newprocess = generatedummyprocess("process_"+std::to_string(processcount), minsize, maxsize, minmemperproc, maxmemperproc);
             processcount++;
             Scheduler::getInstance().push_to_ready(std::make_shared<process>(newprocess));
         }
@@ -47,15 +52,16 @@ void generateprocess::setcreateprocess(bool val)
     this->createprocess = val;
 }
 
-process generateprocess::generatedummyprocess(const std::string name, uint64_t minsize, uint64_t maxsize)
+process generateprocess::generatedummyprocess(const std::string name, uint64_t minsize, uint64_t maxsize, int minmemperproc, int maxmemperproc)
 {
-
-    process newprocess(name);
-    std::queue<std::shared_ptr<ICommand>> commands;
-    std::string toPrint = "Value from: ";
+    std::uniform_int_distribution<> mem(minmemperproc, maxmemperproc);
+    std::uniform_int_distribution<> distrib(minsize, maxsize);
     std::random_device rd;
     std::mt19937 gen(rd());
-    std::uniform_int_distribution<> distrib(minsize, maxsize);
+    auto procmem = mem(gen);
+    process newprocess(name, procmem);
+    std::queue<std::shared_ptr<ICommand>> commands;
+    std::string toPrint = "Value from: ";
     uint64_t count = 0;
     int declaredvars = 0;
     uint64_t instructionsize = distrib(gen);
@@ -83,7 +89,7 @@ process generateprocess::generatedummyprocess(const std::string name, uint64_t m
     while (count < instructionsize)
     {
 
-        switch (getRandomNumber(0, 5))
+        switch (getRandomNumber(0, 7))
         {
         case 0: //PRINT
         {
@@ -126,6 +132,16 @@ process generateprocess::generatedummyprocess(const std::string name, uint64_t m
                 commands.push(std::make_shared<SleepCommand>(newprocess.getID(), getRandomNumber(1,256), newprocess.getsleepcounterPtr()));
                 count++;
                 break;
+            }
+        case 6: //WRITE
+            {
+                std::string hex = std::format("0x{:X}", getRandomNumber(0,procmem-1));
+                commands.push(std::make_shared<WriteCommand>(newprocess.getID(), getRandomNumber(0, 65535), hex));
+            }
+        case 7: //READ
+            {
+                std::string hex = std::format("0x{:X}", getRandomNumber(0,procmem-1));
+                commands.push(std::make_shared<ReadCommand>(newprocess.getID(), "var"+std::to_string(getRandomNumber(0,declaredvars)), hex, newprocess.getvarList()));
             }
         }
     }

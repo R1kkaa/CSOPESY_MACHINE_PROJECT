@@ -5,6 +5,7 @@
 #ifndef MEMORYMANAGER_H
 #define MEMORYMANAGER_H
 #include <mutex>
+#include <shared_mutex>
 
 #include "Pages.h"
 
@@ -21,7 +22,7 @@ class MemoryManager {
     int maxMemory;
     int memPerFrame;
     int totalFrames;
-    std::mutex memlock;
+    mutable std::shared_mutex memlock;
     std::vector<Frame> frames;
     std::string filename = "csopesy_backing_store.txt";
     MemoryManager(int maxMemory, int memPerFrame) : maxMemory(maxMemory), memPerFrame(memPerFrame)
@@ -68,12 +69,14 @@ class MemoryManager {
     void writeAllEntries(const std::vector<std::string>& entries) const;
     bool parseEntry(const std::string& entry, int& process_id, int& page_id, std::vector<uint8_t>& data) const;
     int findVictimFrame();
+    void printMemory();
     Pages* getPageInMemory(int processid, int pageid);
     int allocatePage(Pages pages);
     int findPageinMemory(int processid, int pageid);
     void emptyFrame(int framenum);
     void writeInMemory(int processid, std::string address, uint16_t value);
     uint16_t readInMemory(int processid, std::string address);
+    void deallocateProcess(int processid);
     int handlePageFault(int processid, int pageid, std::string address);
 
     // Deleted copy constructor and assignment operator to prevent duplication

@@ -24,7 +24,9 @@ public:
         ADD,
         SUBTRACT,
         FOR,
-        SLEEP
+        SLEEP,
+        READ,
+        WRITE
     };
     ICommand(int pid, CommandType commandType);
     [[nodiscard]] CommandType getCommandType() const;

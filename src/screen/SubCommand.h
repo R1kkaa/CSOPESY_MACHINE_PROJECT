@@ -13,7 +13,7 @@
 
 class SubCommand: public ICommand {
 public:
-    SubCommand(int pid, std::string result, std::string var1, std::string var2, std::shared_ptr<std::unordered_map<std::string, uint16_t>> varList):
+    SubCommand(int pid, std::string result, std::string var1, std::string var2, std::shared_ptr<std::unordered_map<std::string, std::string>> varList):
         ICommand(pid, ICommand::ADD)
     {
         this->result = result;
@@ -27,7 +27,7 @@ private:
     std::string result;
     std::string var1;
     std::string var2;
-    std::shared_ptr<std::unordered_map<std::string, uint16_t>> varList;
+    std::shared_ptr<std::unordered_map<std::string, std::string>> varList;
 };
 
 

@@ -14,7 +14,7 @@
 
 class DeclareCommand: public ICommand{
     public:
-    DeclareCommand(int pid, std::string name, uint16_t value, std::shared_ptr<std::unordered_map<std::string, uint16_t>> varList):
+    DeclareCommand(int pid, std::string name, uint16_t value, std::shared_ptr<std::unordered_map<std::string, std::string>> varList):
         ICommand(pid, ICommand::DECLARE)
     {
         this->name = name;
@@ -39,7 +39,7 @@ class DeclareCommand: public ICommand{
 private:
     std::string name;
     uint16_t value;
-    std::shared_ptr<std::unordered_map<std::string, uint16_t>> varList;
+    std::shared_ptr<std::unordered_map<std::string, std::string>> varList;
 
 };
 

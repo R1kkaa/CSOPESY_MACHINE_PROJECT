@@ -21,11 +21,13 @@ public:
         STOPPED,
         FINISHED,
         SLEEPING,
+        DESTROYED,
     };
     // Constructor
     explicit process(std::string name);
     Status getstatus();
     void setstatus(Status status);
+    process(std::string name, int memory);
     [[nodiscard]] std::string getname() const;
     void setname(std::string name);
     void setinstructions(std::queue<std::shared_ptr<ICommand>> instructions, int size);
@@ -36,9 +38,10 @@ public:
     std::queue<std::shared_ptr<ICommand>>* getInstructions();
     std::vector<std::string> getFormattedLogs();
     std::shared_ptr<std::stringstream> getPrintLogs();
-    std::shared_ptr<std::unordered_map<std::string, uint16_t>> getvarList();
+    std::shared_ptr<std::unordered_map<std::string, std::string>> getvarList();
     [[nodiscard]] bool has_cpu_cycled() const;
     void set_cpu_cycled(bool cpu_cycled);
+    bool getMemoryViolation();
     void runInstruction();
     [[nodiscard]] int getcurrLine() const;
     [[nodiscard]] int getcurrLineCounterForRR() const;
@@ -67,8 +70,10 @@ private:
     int maxLine = 0;
     std::shared_ptr<int> sleepcounter;
     int sleeptime = 0;
-    std::shared_ptr<std::unordered_map<std::string, uint16_t>> varList;
+    std::shared_ptr<std::unordered_map<std::string, std::string>> varList;
     bool inMemory = 0; //if it is in memory
+    int memory = 0;
+    bool memory_violation = false;
 
 
 };
