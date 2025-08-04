@@ -16,6 +16,8 @@ class Util {
     static void printHelp();
     static std::vector<std::string> readInput();
     static void printMenu();
+    static std::vector<std::string> split(const std::string& str, char delimiter);
+    static std::string cleaned(const std::string& str);
 };
 
 

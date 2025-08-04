@@ -11,12 +11,15 @@
 #include <iterator>
 #include <memory>
 #include <random>
+#include <sstream>
+
 #include <mutex>
 #include "../screen/generateprocess.h"
 #include "../screen/CPUCore.h"
 #include "../screen/PrintCommand.h"
 #include "../screen/Scheduler.h"
 #include "../screen/Memory.h"
+#include <ranges>
 
 //TODO: Read config file first and implement "initialize command" (We can do this last)
 
@@ -137,8 +140,17 @@ void Shell::start(){
                     openscreen(*foundProcess);
                 }
             }
+
+            //make a new screen
             else if (initialized && userInput[0] == "screen" && userInput[1] == "-s") {
-                std::shared_ptr<process>* foundProcess = findsession(CPUs, processes, sleepingprocesses, userInput[2]);
+                int process_memory_size = std::stoi(userInput[3]);
+                if (process_memory_size < 64 || process_memory_size > 65536) {
+                    std::cout << "Process memory size must be between 64 and 65536 bytes." << std::endl;
+                    system("pause");
+                    continue;
+				}
+                else {
+                 std::shared_ptr<process>* foundProcess = findsession(CPUs, processes, sleepingprocesses, userInput[2]);
                 if (foundProcess == nullptr) { //if no existing process, make one
                     Util::clearScreen();
                     std::shared_ptr<process> newprocess = std::make_shared<process>(generateprocess::generatedummyprocess(userInput[2], minLines, maxLines));
@@ -149,6 +161,43 @@ void Shell::start(){
                     Util::printMenu();
                     std::cout << "Process <" + userInput[2] + "> exists." << std::endl;
                     system("pause");
+                }
+                }
+               
+            }
+            else if (initialized && userInput[0] == "screen" && userInput[1] == "-c"){ 
+                // DECLARE var 10
+                int process_memory_size = std::stoi(userInput[2]); //process_memory_size
+                std::vector<std::string> instructions;
+                
+                //combine userInput[3] and above in one line
+                std::ostringstream oss;
+                for (size_t i = 3; i < userInput.size(); ++i) {
+                    oss << userInput[i];
+                    if (i != userInput.size() - 1) {
+                        oss << " ";  // add spaces between tokens
+                    }
+                }
+                std::vector<std::string> rawParts = Util::split(oss.str(), ';');
+                for (const std::string& part : rawParts) {
+                    instructions.push_back(Util::cleaned(part));  // cleaned() removes leading/trailing spaces and quotes
+                }
+
+                if (process_memory_size < 64 || process_memory_size > 65536) {
+                    std::cout << "Process memory size must be between 64 and 65536 bytes." << std::endl;
+                    system("pause");
+                    continue;
+                }
+                if (instructions.size() < 1 || instructions.size() > 50){
+                    std::cout << "Instruction size must be between 1 and 50." << std::endl;
+                    system("pause");
+                    continue;
+                }
+                else {
+					//print the content of the instrutions vector
+                    for(std::string instruction:instructions){
+                        std::cout << instruction << "\n";
+                    }
                 }
             }
             //TODO: Change the screen -ls command to a function within scheduler-start to retrieve the processes, otherwise race conditions and mutex violations occur which breaks/stops the code
