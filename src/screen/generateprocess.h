@@ -45,6 +45,9 @@ private:
     void run() override;
     void setcreateprocess(bool val);
     static process generatedummyprocess(std::string name, uint64_t minsize, uint64_t maxsize, int minmemperproc, int maxmemperproc);
+    static process generatedummyprocess(std::string name, uint64_t minsize, uint64_t maxsize, int minmemperproc,
+                                 int maxmemperproc,
+                                 std::vector<std::string> instructions);
     static int getRandomNumber(int min, int max);
     static std::tuple<ForCommand, int> generateforloop(uint64_t size, int declaredvars, std::string name, process* newprocess, int recurses);
 

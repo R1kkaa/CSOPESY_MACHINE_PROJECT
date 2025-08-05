@@ -124,6 +124,7 @@ void process::runInstruction()
             {
                 memory_violation = true;
                 status = DESTROYED;
+                formattedLogs.emplace_back("ERROR: PROCESSED DESTROYED DUE TO MEMORY VIOLATION");
             }
         }
         if (instructions.front()->getCommandType() == ICommand::WRITE)
@@ -135,6 +136,7 @@ void process::runInstruction()
             {
                 memory_violation = true;
                 status = DESTROYED;
+                formattedLogs.emplace_back("ERROR: PROCESSED DESTROYED DUE TO MEMORY VIOLATION");
             }
         }
         // if current command is PRINT

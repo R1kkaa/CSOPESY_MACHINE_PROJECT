@@ -16,7 +16,6 @@
 #include "../screen/CPUCore.h"
 #include "../screen/PrintCommand.h"
 #include "../screen/Scheduler.h"
-#include "../screen/Memory.h"
 #include "../screen/MemoryManager.h"
 
 //TODO: Read config file first and implement "initialize command" (We can do this last)
@@ -114,11 +113,11 @@ void Shell::start(){
                 Util::clearScreen();
             }
             else if (userInput[0] == "scheduler-start" && initialized) {
-                std::cout << userInput[0] << " Process generation started." << std::endl;
+                std::cout << " Process generation started." << std::endl;
                 generateprocess.setcreateprocess(true);
             }
             else if (userInput[0] == "scheduler-stop" && initialized) {
-                std::cout << userInput[0] << " Process generation stopped." << std::endl;
+                std::cout << " Process generation stopped." << std::endl;
                 generateprocess.setcreateprocess(false);
             }
             else if (userInput[0] == "vmstat" && initialized) {
@@ -164,7 +163,6 @@ void Shell::start(){
                 if(foundProcess == nullptr) { //if no existing process, return not found
                     Util::clearScreen();
                     std::cout << "Process <" + userInput[2] + "> not found." << std::endl;
-                    system("pause");
 				}
                 else {
                     Util::clearScreen();
@@ -172,20 +170,27 @@ void Shell::start(){
                 }
             }
             else if (initialized && userInput[0] == "screen" && userInput[1] == "-s") {
-                std::shared_ptr<process>* foundProcess = findsession(CPUs, processes, sleepingprocesses, userInput[2]);
-                if (foundProcess == nullptr) { //if no existing process, make one
-                    Util::clearScreen();
-                    std::shared_ptr<process> newprocess = std::make_shared<process>(generateprocess::generatedummyprocess(userInput[2], minLines, maxLines, minmemPerProc, maxmemPerProc));
-                    processes.push_back(newprocess);
-                    openscreen(newprocess);
+                int process_memory_size = std::stoi(userInput[3]);
+                if (process_memory_size < 64 || process_memory_size > 65536)
+                {
+                    std::cout << "Process memory size must be between 64 and 65536 bytes." << std::endl;
                 }
-                else {
-                    Util::clearScreen();
-                    std::cout << "Process <" + userInput[2] + "> exists." << std::endl;
-                    system("pause");
+                else
+                {
+                    std::shared_ptr<process>* foundProcess = findsession(CPUs, processes, sleepingprocesses, userInput[2]);
+                    if (foundProcess == nullptr) { //if no existing process, make one
+                        Util::clearScreen();
+                        std::shared_ptr<process> newprocess = std::make_shared<process>(generateprocess::generatedummyprocess(userInput[2], minLines, maxLines, process_memory_size, process_memory_size));
+                        Scheduler::getInstance().push_to_ready(newprocess);
+                        Util::clearScreen();
+                        openscreen(newprocess);
+                    }
+                    else {
+                        Util::clearScreen();
+                        std::cout << "Process <" + userInput[2] + "> exists." << std::endl;
+                    }
                 }
             }
-            //TODO: Change the screen -ls command to a function within scheduler-start to retrieve the processes, otherwise race conditions and mutex violations occur which breaks/stops the code
             else if (userInput[0] == "screen" && userInput[1] == "-ls" && initialized) {
                     Util::clearScreen();
                     std::cout << "-----------------------------------" << std::endl;
@@ -223,8 +228,6 @@ void Shell::start(){
                     Scheduler::getInstance().print_destroyed();
                     std::cout << "----------------------------------\n" << std::endl;
             }
-
-            //TODO: Add adding to file here
             else if (userInput[0] == "report-util" && initialized) {
                 std::cout << userInput[0] << " command recognized." << std::endl;
                 // Open file in truncate mode to refresh/overwrite existing content
@@ -272,6 +275,48 @@ void Shell::start(){
                 }
 
                 reportFile.close();
+            }
+            else if(initialized && userInput[0] == "screen" && userInput[1] == "-c"){
+                int process_memory_size;
+                try
+                {
+                    process_memory_size = std::stoi(userInput[3]); //process_memory_size
+                }catch(std::invalid_argument)
+                {
+                    std::cout << "Error: Input in the format of 'screen -c <process_name> <process_memory_size> \"<instructions>\"'" << std::endl;
+                }catch(std::out_of_range)
+                {
+                    std::cout << "Error: Integer Out of Range." << std::endl;
+                }
+                std::vector<std::string> instructions;
+
+                //combine userInput[3] and above in one line
+                std::ostringstream oss;
+                for (size_t i = 4; i < userInput.size(); ++i) {
+                    oss << userInput[i];
+                    if (i != userInput.size() - 1) {
+                        oss << " ";  // add spaces between tokens
+                    }
+                }
+                std::vector<std::string> rawParts = Util::split(oss.str(), ';');
+                for (std::string& part : rawParts) {
+                    part = Util::parsePrint(part); //further parse if is type print
+                    instructions.push_back(Util::cleaned(part));  // cleaned() removes leading/trailing spaces and quotes
+                }
+
+                if (process_memory_size < 64 || process_memory_size > 65536) {
+                    std::cout << "Process memory size must be between 64 and 65536 bytes." << std::endl;
+                }
+                if (instructions.size() < 1 || instructions.size() > 50){
+                    std::cout << "Instruction size must be between 1 and 50." << std::endl;
+                }
+                if (instructions.size() <= 50 && instructions.size() >= 1 &&  process_memory_size >= 64 && process_memory_size <= 65536) {
+                    //generate a process
+                    std::shared_ptr<process> newprocess = std::make_shared<process>(generateprocess::generatedummyprocess(userInput[2], minLines, maxLines, process_memory_size, process_memory_size, instructions));
+                    Scheduler::getInstance().push_to_ready(newprocess);
+                    Util::clearScreen();
+                    openscreen(newprocess);
+                }
             }
             else {
                 for (auto i : userInput)
@@ -324,7 +369,7 @@ void Shell::openscreen(std::shared_ptr<process> screen)
     bool run = true;
     while (run)
     {
-        std::cout << "Name: " << screen->getname() << "\nID: " << screen->getID() << "\nScreen created at: " << screen->displayTimestamp() << std::endl;
+        std::cout << "Name: " << screen->getname() << "\nID: " << screen->getID() << "\nProcess created at: " << screen->displayTimestamp() << std::endl;
         std::vector<std::string> userInput = Util::readInput();
         userInput.at(0); //anti out of range error
         try {
@@ -335,6 +380,7 @@ void Shell::openscreen(std::shared_ptr<process> screen)
             }
             if (userInput[0] == "process-smi")
             {
+                Util::clearScreen();
                 std::cout << "Instructions: " << std::to_string(screen->getcurrLine()) << "/" << std::to_string(screen->getmaxLine()) << std::endl;
                 std::cout << "Logs: \n\n";
                 auto logs = screen->getFormattedLogs();

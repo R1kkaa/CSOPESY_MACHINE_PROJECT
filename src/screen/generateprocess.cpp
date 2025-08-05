@@ -16,6 +16,7 @@
 #include "SubCommand.h"
 #include "Scheduler.h"
 #include "WriteCommand.h"
+#include "../shell/util.h"
 
 generateprocess::generateprocess(uint64_t Delay, std::deque<std::shared_ptr<process>>* ReadyQueue, Scheduler* scheduler, std::mutex* queuemutex, uint64_t maxsize, uint64_t minsize, int minmemperproc, int maxmemperproc)
 {
@@ -127,6 +128,54 @@ process generateprocess::generatedummyprocess(const std::string name, uint64_t m
                 count++;
                 break;
             }
+        }
+    }
+    newprocess.setinstructions(commands, commands.size());
+    return newprocess;
+}
+
+process generateprocess::generatedummyprocess(const std::string name, uint64_t minsize, uint64_t maxsize, int minmemperproc, int maxmemperproc, std::vector<std::string> instructions)
+{
+    std::uniform_int_distribution<> mem(minmemperproc, maxmemperproc);
+    std::uniform_int_distribution<> distrib(minsize, maxsize);
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    auto procmem = mem(gen);
+    process newprocess(name, procmem);
+    std::queue<std::shared_ptr<ICommand>> commands;
+    int declaredvars = 0;
+    uint64_t instructionsize = distrib(gen);
+    for (auto instruction : instructions)
+    {
+        if (instruction.empty())
+            break;
+        auto parsedinstruction = Util::split(instruction, ' ');
+        if (parsedinstruction[0] == "PRINT")
+        {
+            parsedinstruction[1].erase(std::remove(parsedinstruction[1].begin(), parsedinstruction[1].end(), '"'), parsedinstruction[1].end());
+            commands.push(std::make_shared<PrintCommand>(newprocess.getID(), parsedinstruction[1], parsedinstruction[2], newprocess.getPrintLogs(), newprocess.getvarList()));
+        }
+        else if (parsedinstruction[0] == "DECLARE")
+        {
+            commands.push(std::make_shared<DeclareCommand>(newprocess.getID(), parsedinstruction[1], std::stoi(parsedinstruction[2]), newprocess.getvarList()));
+            declaredvars++;
+        }
+        else if (parsedinstruction[0] == "ADD")
+        {
+            commands.push(std::make_shared<AddCommand>(newprocess.getID(), parsedinstruction[1], parsedinstruction[2], parsedinstruction[3], newprocess.getvarList()));
+        }
+        else if (parsedinstruction[0] == "SUB")
+        {
+            commands.push(std::make_shared<AddCommand>(newprocess.getID(), parsedinstruction[1], parsedinstruction[2], parsedinstruction[3], newprocess.getvarList()));
+        }
+        else if (parsedinstruction[0] == "WRITE")
+        {
+                commands.push(std::make_shared<WriteCommand>(newprocess.getID(), 15, parsedinstruction[1]));
+
+        }
+        else if (parsedinstruction[0] == "READ")
+        {
+                commands.push(std::make_shared<ReadCommand>(newprocess.getID(), parsedinstruction[1], parsedinstruction[2], newprocess.getvarList()));
         }
     }
     newprocess.setinstructions(commands, commands.size());

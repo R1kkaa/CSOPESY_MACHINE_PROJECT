@@ -4,6 +4,8 @@
 
 #include "PrintCommand.h"
 
+#include "MemoryManager.h"
+
 void PrintCommand::execute()
 {
     //adds the print to logs
@@ -16,7 +18,7 @@ void PrintCommand::execute()
         const auto found = varList->find(var);
         if (found != varList->end())
         {
-            *logs << toPrint + std::to_string(found->second);
+            *logs << toPrint + std::to_string(MemoryManager::getInstance().readInMemory(pid, found->second));
         }else
         {
             *logs << toPrint + std::to_string(0);

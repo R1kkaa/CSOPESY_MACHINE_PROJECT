@@ -18,7 +18,7 @@ public:
     {
         this->toPrint = toPrint;
     }
-    PrintCommand(int pid, std::string& toPrint, std::string var, std::shared_ptr<std::stringstream> logs, std::shared_ptr<std::unordered_map<std::string, uint16_t>> varList): ICommand(pid, PRINT), logs(std::move(logs)), varList(std::move(varList))
+    PrintCommand(int pid, std::string& toPrint, std::string var, std::shared_ptr<std::stringstream> logs, std::shared_ptr<std::unordered_map<std::string, std::string>> varList): ICommand(pid, PRINT), logs(std::move(logs)), varList(std::move(varList))
     {
         this->toPrint = toPrint;
         this->var = std::move(var);
@@ -31,7 +31,7 @@ private:
     std::string toPrint;
     std::string var = {};
     std::shared_ptr<std::stringstream> logs;
-    std::shared_ptr<std::unordered_map<std::string, uint16_t>> varList;
+    std::shared_ptr<std::unordered_map<std::string, std::string>> varList;
 };
 
 

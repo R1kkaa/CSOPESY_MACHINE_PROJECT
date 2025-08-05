@@ -3,6 +3,8 @@
 //
 
 #include "util.h"
+
+#include <algorithm>
 #include <iostream>
 #include <iterator>
 #include <sstream>
@@ -54,6 +56,17 @@ std::vector<std::string> Util::split(const std::string & str, char delimiter) {
     return word;
 }
 
+std::string Util::parsePrint( std::string & str)
+{
+    std::transform(str.begin(), str.end(), str.begin(), [](char c) {
+        return (c == '(' || c == ')' || c == '+' || c == '\\') ? ' ' : c;
+    });
+    auto new_end = std::unique(str.begin(), str.end(), [](char a, char b) {
+    return a == ' ' && b == ' ';
+});
+    str.erase(new_end, str.end());
+    return str;
+}
 
 //remove "
 std::string Util::cleaned(const std::string& str) {
