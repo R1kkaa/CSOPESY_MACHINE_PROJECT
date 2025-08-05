@@ -28,17 +28,12 @@
     </configurations>
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="49e7983e-f2d6-4863-9524-059df811eb1a" name="Changes" comment="fixed some command errors, added process-smi, fixed text spacing for majority">
-      <change beforePath="$PROJECT_DIR$/.idea/editor.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/editor.xml" afterDir="false" />
+    <list default="true" id="49e7983e-f2d6-4863-9524-059df811eb1a" name="Changes" comment="fix num cores error">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/screen/PrintCommand.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/screen/PrintCommand.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/screen/Pages.h" beforeDir="false" afterPath="$PROJECT_DIR$/src/screen/Pages.h" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/screen/PrintCommand.h" beforeDir="false" afterPath="$PROJECT_DIR$/src/screen/PrintCommand.h" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/screen/generateprocess.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/screen/generateprocess.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/screen/generateprocess.h" beforeDir="false" afterPath="$PROJECT_DIR$/src/screen/generateprocess.h" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/screen/process.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/screen/process.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/shell/shell.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/shell/shell.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/shell/util.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/shell/util.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/shell/util.h" beforeDir="false" afterPath="$PROJECT_DIR$/src/shell/util.h" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -167,9 +162,54 @@
     <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
     <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
     <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
   </component>
   <component name="ProblemsViewState">
-    <option name="selectedTabId" value="QODANA_PROBLEMS_VIEW_TAB" />
+    <option name="selectedTabId" value="CurrentFile" />
   </component>
   <component name="ProjectApplicationVersion">
     <option name="ide" value="CLion" />
@@ -207,7 +247,7 @@
     "node.js.selected.package.eslint": "(autodetect)",
     "node.js.selected.package.tslint": "(autodetect)",
     "nodejs_package_manager_path": "npm",
-    "settings.editor.selected.configurable": "settings.qodana",
+    "settings.editor.selected.configurable": "CPPToolchains",
     "vue.rearranger.settings.migration": "true"
   }
 }]]></component>
@@ -242,7 +282,7 @@
       <workItem from="1753974045108" duration="1616000" />
       <workItem from="1754244707501" duration="9635000" />
       <workItem from="1754283352940" duration="39771000" />
-      <workItem from="1754362746640" duration="6862000" />
+      <workItem from="1754362746640" duration="15070000" />
     </task>
     <task id="LOCAL-00001" summary="fix files, week 10 assignment">
       <option name="closed" value="true" />
@@ -276,7 +316,23 @@
       <option name="project" value="LOCAL" />
       <updated>1754327618624</updated>
     </task>
-    <option name="localTasksCounter" value="5" />
+    <task id="LOCAL-00005" summary="added screen -c">
+      <option name="closed" value="true" />
+      <created>1754371760601</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1754371760601</updated>
+    </task>
+    <task id="LOCAL-00006" summary="fix num cores error">
+      <option name="closed" value="true" />
+      <created>1754373706054</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1754373706054</updated>
+    </task>
+    <option name="localTasksCounter" value="7" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -315,7 +371,41 @@
     <MESSAGE value="memory management, demand paging and backing store implemented" />
     <MESSAGE value="Read and Write Commands added" />
     <MESSAGE value="fixed some command errors, added process-smi, fixed text spacing for majority" />
-    <option name="LAST_COMMIT_MESSAGE" value="fixed some command errors, added process-smi, fixed text spacing for majority" />
+    <MESSAGE value="added screen -c" />
+    <MESSAGE value="fix num cores error" />
+    <option name="LAST_COMMIT_MESSAGE" value="fix num cores error" />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <breakpoint enabled="true" log-message="true" log-stack="true" type="CidrExceptionBreakpoint">
+          <properties caught="ANY_EXCEPTION">
+            <option name="whenCaught" value="ANY_EXCEPTION" />
+          </properties>
+          <option name="timeStamp" value="10" />
+        </breakpoint>
+      </breakpoints>
+      <default-breakpoints>
+        <breakpoint enabled="true" type="python-exception">
+          <dependency id="0" />
+          <properties notifyOnTerminate="true" exception="BaseException">
+            <option name="notifyOnTerminate" value="true" />
+          </properties>
+        </breakpoint>
+        <breakpoint enabled="true" log-message="true" log-stack="true" type="CidrExceptionBreakpoint">
+          <dependency leave-enabled="true" master-id="0" />
+          <properties caught="ANY_EXCEPTION">
+            <option name="whenCaught" value="ANY_EXCEPTION" />
+          </properties>
+        </breakpoint>
+        <breakpoint enabled="true" type="javascript-exception" />
+      </default-breakpoints>
+    </breakpoint-manager>
+    <watches-manager>
+      <configuration name="CMakeRunConfiguration">
+        <watch expression="this-&gt;toPrint" />
+      </configuration>
+    </watches-manager>
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
     <expand />

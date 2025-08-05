@@ -153,7 +153,7 @@ process generateprocess::generatedummyprocess(const std::string name, uint64_t m
         if (parsedinstruction[0] == "PRINT")
         {
             parsedinstruction[1].erase(std::remove(parsedinstruction[1].begin(), parsedinstruction[1].end(), '"'), parsedinstruction[1].end());
-            commands.push(std::make_shared<PrintCommand>(newprocess.getID(), parsedinstruction[1], parsedinstruction[2], newprocess.getPrintLogs(), newprocess.getvarList()));
+            commands.push(std::make_shared<PrintCommand>(newprocess.getID(), parsedinstruction[1], parsedinstruction[3], newprocess.getPrintLogs(), newprocess.getvarList()));
         }
         else if (parsedinstruction[0] == "DECLARE")
         {

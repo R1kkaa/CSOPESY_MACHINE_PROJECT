@@ -13,9 +13,9 @@ class Pages {
     int pageId;
     int processId;
     std::vector<uint8_t> data;
+    int pageSize;
     bool isDirty;
     bool isValid;
-    int pageSize;
 
 public:
     Pages(int pageId, int processId, int pageSize)

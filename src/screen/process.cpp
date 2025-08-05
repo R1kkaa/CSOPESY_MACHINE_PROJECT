@@ -142,8 +142,10 @@ void process::runInstruction()
         // if current command is PRINT
         if (instructions.front()->getCommandType() == ICommand::PRINT && !memory_violation)
         {
+            auto ptr = std::dynamic_pointer_cast<PrintCommand>(instructions.front());
+            ptr->varList = getvarList();
             instructions.front()->execute();
-            std::string append = "(" + executionTime() + ") " + "Core:" + std::to_string(this->core) + " " + printLogs->str();
+            std::string append = "(" + executionTime() + ") " + "Core:" + std::to_string(this->core) + " PRINT: \"" + printLogs->str() + "\"";
             instructions.pop();
             formattedLogs.push_back(append);
             printLogs->str("");

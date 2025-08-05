@@ -27,11 +27,11 @@ public:
     };
     void execute() override;
     int getsize() override;
+    std::shared_ptr<std::unordered_map<std::string, std::string>> varList;
 private:
     std::string toPrint;
     std::string var = {};
     std::shared_ptr<std::stringstream> logs;
-    std::shared_ptr<std::unordered_map<std::string, std::string>> varList;
 };
 
 
