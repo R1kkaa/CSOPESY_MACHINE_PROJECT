@@ -96,6 +96,7 @@ class Scheduler: public Thread{
     void set_cpus(std::vector<CPUCore>* cp_us)
     {
         CPUs = cp_us;
+        numCores = CPUs->size();
     }
 
     [[nodiscard]] uint64_t get_delay() const
